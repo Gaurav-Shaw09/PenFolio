@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ function Contact() {
   });
 
   const [status, setStatus] = useState('');
+  const navigate = useNavigate(); // ✅ Use navigate for routing like in About.js
 
   // Handle input changes
   const handleChange = (e) => {
@@ -33,42 +35,115 @@ function Contact() {
   };
 
   return (
-    <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px' }}>
-      <h2>Contact Us</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Your Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-          style={{ display: 'block', width: '100%', marginBottom: '10px', padding: '8px' }}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Your Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          style={{ display: 'block', width: '100%', marginBottom: '10px', padding: '8px' }}
-        />
-        <textarea
-          name="message"
-          placeholder="Your Message"
-          value={formData.message}
-          onChange={handleChange}
-          required
-          style={{ display: 'block', width: '100%', marginBottom: '10px', padding: '8px', height: '100px' }}
-        />
-        <button type="submit" style={{ padding: '10px 20px', background: '#4facfe', color: 'white', border: 'none', cursor: 'pointer' }}>
-          Send Message
-        </button>
-      </form>
-      {status && <p style={{ marginTop: '10px', color: 'green' }}>{status}</p>}
+    <div style={styles.container}>
+      {/* ✅ Navbar (Copied from About.js) */}
+      <nav style={styles.navbar}>
+        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>MyApp</div>
+        <div>
+          <span style={styles.navLink} onClick={() => navigate('/home')}>Home</span>
+          <span style={styles.navLink} onClick={() => navigate('/about')}>About Us</span>
+          <span style={styles.navLink} onClick={() => navigate('/contact')}>Contact Us</span>
+        </div>
+      </nav>
+
+      <div style={styles.formContainer}>
+        <h2>Contact Us</h2>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            name="name"
+            placeholder="Your Name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+            style={styles.input}
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Your Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            style={styles.input}
+          />
+          <textarea
+            name="message"
+            placeholder="Your Message"
+            value={formData.message}
+            onChange={handleChange}
+            required
+            style={styles.textarea}
+          />
+          <button type="submit" style={styles.button}>
+            Send Message
+          </button>
+        </form>
+        {status && <p style={styles.status}>{status}</p>}
+      </div>
     </div>
   );
 }
+
+// ✅ Same Navbar Styles as About.js
+const styles = {
+  container: {
+    fontFamily: 'Arial, sans-serif',
+    background: '#f4f4f4',
+    minHeight: '100vh',
+    padding: '20px',
+    textAlign: 'center',
+  },
+  navbar: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: '#4facfe',
+    padding: '15px 50px',
+    color: 'white',
+    fontSize: '18px',
+    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+    width: '100%',
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    zIndex: 1000,
+  },
+  navLink: {
+    margin: '0 20px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+  },
+  formContainer: {
+    maxWidth: '500px',
+    margin: 'auto',
+    padding: '20px',
+    marginTop: '100px', // To avoid navbar overlap
+  },
+  input: {
+    display: 'block',
+    width: '100%',
+    marginBottom: '10px',
+    padding: '8px',
+  },
+  textarea: {
+    display: 'block',
+    width: '100%',
+    marginBottom: '10px',
+    padding: '8px',
+    height: '100px',
+  },
+  button: {
+    padding: '10px 20px',
+    background: '#4facfe',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  status: {
+    marginTop: '10px',
+    color: 'green',
+  },
+};
 
 export default Contact;
