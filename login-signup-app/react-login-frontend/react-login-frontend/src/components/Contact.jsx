@@ -10,7 +10,7 @@ function Contact() {
   });
 
   const [status, setStatus] = useState('');
-  const navigate = useNavigate(); // ✅ Use navigate for routing like in About.js
+  const navigate = useNavigate();
 
   // Handle input changes
   const handleChange = (e) => {
@@ -36,7 +36,7 @@ function Contact() {
 
   return (
     <div style={styles.container}>
-      {/* ✅ Navbar (Copied from About.js) */}
+      {/* ✅ Navbar */}
       <nav style={styles.navbar}>
         <div style={{ fontSize: '24px', fontWeight: 'bold' }}>MyApp</div>
         <div>
@@ -81,11 +81,16 @@ function Contact() {
         </form>
         {status && <p style={styles.status}>{status}</p>}
       </div>
+
+      {/* ✅ Footer Added Here */}
+      <footer style={styles.footer}>
+        © 2025 MyApp. All rights reserved.
+      </footer>
     </div>
   );
 }
 
-// ✅ Same Navbar Styles as About.js
+// ✅ Styles
 const styles = {
   container: {
     fontFamily: 'Arial, sans-serif',
@@ -93,6 +98,7 @@ const styles = {
     minHeight: '100vh',
     padding: '20px',
     textAlign: 'center',
+    position: 'relative',
   },
   navbar: {
     display: 'flex',
@@ -143,6 +149,16 @@ const styles = {
   status: {
     marginTop: '10px',
     color: 'green',
+  },
+  footer: {
+    background: '#01579b', // Deep blue footer
+    color: 'white',
+    padding: '15px',
+    textAlign: 'center',
+    fontSize: '16px',
+    position: 'absolute',
+    bottom: 70,
+    width: '100%',
   },
 };
 

@@ -79,6 +79,21 @@ function Home() {
           </button>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer style={{
+        marginTop: '40px',
+        background: '#01579b', // Deep blue footer
+        color: 'white',
+        padding: '15px',
+        textAlign: 'center',
+        fontSize: '16px',
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+      }}>
+        © 2025 MyApp. All rights reserved.
+      </footer>
     </div>
   );
 }
