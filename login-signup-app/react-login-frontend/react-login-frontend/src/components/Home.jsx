@@ -1,101 +1,74 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-function Home() {
-  const navigate = useNavigate();
-  const username = localStorage.getItem('username');
+const Home = () => {
+    const [blogs, setBlogs] = useState([]);
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [author, setAuthor] = useState("");
+    const [image, setImage] = useState(null);
 
-  useEffect(() => {
-    if (!localStorage.getItem('username')) {
-      navigate('/login');
-    }
-  }, [navigate]);
+    useEffect(() => {
+        fetchBlogs();
+    }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('username');
-    navigate('/login');
-  };
+    const fetchBlogs = async () => {
+        try {
+            const response = await axios.get("http://localhost:8080/api/blogs");
+            setBlogs(response.data);
+        } catch (error) {
+            console.error("Error fetching blogs:", error);
+        }
+    };
 
-  return (
-    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f4f4', minHeight: '100vh', width: '100vw' }}>
-      {/* Navbar */}
-      <nav style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: '#4facfe',
-        padding: '15px 50px',
-        color: 'white',
-        fontSize: '18px',
-        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
-        width: '100%',
-        position: 'fixed',
-        top: 0,
-        left: 0
-      }}>
-        <div style={{ fontSize: '24px', fontWeight: 'bold' }}>MyApp</div>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("content", content);
+        formData.append("author", author);
+        if (image) {
+            formData.append("file", image);
+        }
+
+        try {
+            await axios.post("http://localhost:8080/api/blogs", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+            fetchBlogs();
+            setTitle("");
+            setContent("");
+            setAuthor("");
+            setImage(null);
+        } catch (error) {
+            console.error("Error creating blog:", error);
+        }
+    };
+
+    return (
         <div>
-          <span style={{ margin: '0 20px', cursor: 'pointer' }} onClick={() => navigate('/home')}>Home</span>
-          <span style={{ margin: '0 20px', cursor: 'pointer' }} onClick={() => navigate('/about')}>About Us</span>
-          <span style={{ margin: '0 20px', cursor: 'pointer' }} onClick={() => navigate('/contact')}>Contact Us</span>
-        </div>
-      </nav>
+            <h2>Create a Blog</h2>
+            <form onSubmit={handleSubmit} encType="multipart/form-data">
+                <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+                <textarea placeholder="Content" value={content} onChange={(e) => setContent(e.target.value)} required />
+                <input type="text" placeholder="Author" value={author} onChange={(e) => setAuthor(e.target.value)} required />
+                <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
+                <button type="submit">Post Blog</button>
+            </form>
 
-      {/* Main Content */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        paddingTop: '60px' // Adjust for fixed navbar
-      }}>
-        <div style={{
-          textAlign: 'center',
-          background: 'white',
-          padding: '40px',
-          borderRadius: '10px',
-          boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
-          width: '60%'
-        }}>
-          <h1 style={{ color: '#333' }}>Welcome, {username}!</h1>
-          <p>This is your home page after successful login.</p>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '12px 25px',
-              fontSize: '16px',
-              background: '#ff4d4d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              marginTop: '20px',
-              transition: '0.3s'
-            }}
-            onMouseOver={(e) => e.target.style.background = '#ff0000'}
-            onMouseOut={(e) => e.target.style.background = '#ff4d4d'}
-          >
-            Logout
-          </button>
+            <h2>All Blogs</h2>
+            <div>
+                {blogs.map((blog) => (
+                    <div key={blog.id} style={{ border: "1px solid #ccc", padding: "10px", margin: "10px 0" }}>
+                        <h3>{blog.title}</h3>
+                        <p>{blog.content}</p>
+                        <p><b>Author:</b> {blog.author}</p>
+                        {blog.imagePath && <img src={`http://localhost:8080/${blog.imagePath}`} alt="Blog" style={{ width: "200px" }} />}
+                    </div>
+                ))}
+            </div>
         </div>
-      </div>
-
-      {/* Footer */}
-      <footer style={{
-        marginTop: '40px',
-        background: '#01579b', // Deep blue footer
-        color: 'white',
-        padding: '15px',
-        textAlign: 'center',
-        fontSize: '16px',
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-      }}>
-        © 2025 MyApp. All rights reserved.
-      </footer>
-    </div>
-  );
-}
+    );
+};
 
 export default Home;
