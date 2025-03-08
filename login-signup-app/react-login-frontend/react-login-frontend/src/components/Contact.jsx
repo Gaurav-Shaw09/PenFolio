@@ -34,15 +34,27 @@ function Contact() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("username"); // Remove stored username
+    localStorage.removeItem("token"); // If using a token-based authentication system
+    navigate("/login"); // Redirect to login page
+  };
+
   return (
     <div style={styles.container}>
       {/* ✅ Navbar */}
       <nav style={styles.navbar}>
         <div style={{ fontSize: '24px', fontWeight: 'bold' }}>MyApp</div>
-        <div>
+        <div style={styles.navCenter}>
           <span style={styles.navLink} onClick={() => navigate('/home')}>Home</span>
           <span style={styles.navLink} onClick={() => navigate('/about')}>About Us</span>
           <span style={styles.navLink} onClick={() => navigate('/contact')}>Contact Us</span>
+          <button
+            onClick={handleLogout}
+            style={{ ...styles.button, backgroundColor: "#f44336" }}
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
@@ -115,10 +127,24 @@ const styles = {
     left: 0,
     zIndex: 1000,
   },
+  navCenter: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '30px',
+    flex: 1, // Pushes items to center
+  },
   navLink: {
-    margin: '0 20px',
     cursor: 'pointer',
     fontWeight: 'bold',
+  },
+  button: {
+    padding: '10px 15px',
+    backgroundColor: '#4facfe',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
+    borderRadius: '5px',
   },
   formContainer: {
     maxWidth: '500px',
@@ -138,13 +164,6 @@ const styles = {
     marginBottom: '10px',
     padding: '8px',
     height: '100px',
-  },
-  button: {
-    padding: '10px 20px',
-    background: '#4facfe',
-    color: 'white',
-    border: 'none',
-    cursor: 'pointer',
   },
   status: {
     marginTop: '10px',

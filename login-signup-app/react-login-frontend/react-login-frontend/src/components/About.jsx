@@ -16,6 +16,12 @@ function About() {
     subham: 'https://www.linkedin.com/in/subham-bangal',
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("username"); // Remove stored username
+    localStorage.removeItem("token"); // If using a token-based authentication system
+    navigate("/login"); // Redirect to login page
+  };
+
   const containerStyle = {
     fontFamily: 'Arial, sans-serif',
     background: 'linear-gradient(135deg, #e3f2fd, #bbdefb)', // Blue gradient background
@@ -46,7 +52,14 @@ function About() {
   const titleStyle = {
     fontSize: '24px',
     fontWeight: 'bold',
-    marginRight: 'auto', // Pushes the title to the left
+  };
+
+  const navCenterStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '30px',
+    flex: 1, // Pushes items to center
   };
 
   const teamContainerStyle = {
@@ -104,11 +117,18 @@ function About() {
   };
 
   const navbarLinksStyle = {
-    margin: '0 20px', // Adjusted margin for better spacing
     cursor: 'pointer',
+    fontWeight: 'bold',
+  };
+
+  const buttonStyle = {
     padding: '10px 15px',
+    backgroundColor: '#f44336',
+    color: 'white',
+    border: 'none',
+    cursor: 'pointer',
     borderRadius: '5px',
-    transition: 'background 0.3s',
+    marginLeft: '20px',
   };
 
   return (
@@ -116,10 +136,16 @@ function About() {
       {/* Navbar */}
       <nav style={navbarStyle}>
         <div style={titleStyle}>MyApp</div>
-        <div style={{ display: 'flex' }}>
+        <div style={navCenterStyle}>
           <span style={navbarLinksStyle} onClick={() => navigate('/home')}>Home</span>
           <span style={navbarLinksStyle} onClick={() => navigate('/about')}>About Us</span>
           <span style={navbarLinksStyle} onClick={() => navigate('/contact')}>Contact Us</span>
+          <button
+            onClick={handleLogout}
+            style={buttonStyle}
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
