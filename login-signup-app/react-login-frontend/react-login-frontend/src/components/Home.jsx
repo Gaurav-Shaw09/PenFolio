@@ -120,11 +120,11 @@ const Home = () => {
                             </>
                         ) : (
                             <button 
-                                onClick={() => toggleReadMore(blog.id)}
-                                style={styles.readMoreButton}
-                            >
-                                Read More
-                            </button>
+                            onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })} 
+                            style={styles.readMoreButton}
+                        >
+                            Read More
+                        </button>
                         )}
                     </div>
                 ))}
@@ -163,7 +163,7 @@ const Home = () => {
             )}
 
             {/* ✅ Footer */}
-            <footer style={styles.footer}>
+            <footer style={styles.footer}> 
                 © 2025 MyApp. All rights reserved.
             </footer>
         </div>
@@ -230,22 +230,31 @@ const styles = {
     },
     blogContainer: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+        gridTemplateColumns: "repeat(5, 1fr)", // Exactly 5 blogs per row
         gap: "20px",
         justifyContent: "center",
+        maxWidth: "95vw",
+        margin: "0 auto",
     },
     blogCard: {
         border: "1px solid #ccc",
-        padding: "15px",
+        padding: "20px",
         borderRadius: "10px",
         backgroundColor: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        height: "400px", // Increased height for better spacing
+        alignItems: "center", // Center content inside
     },
     blogImage: {
-        width: "100%",
+        width: "220px", // Full width of card
+        height: "100%", // Increased height for better visibility
+        objectFit: "cover", // Ensures the image covers the area properly
         borderRadius: "10px",
     },
     readMoreButton: {
-        padding: "5px 10px",
+        padding: "10px 10px",
         backgroundColor: "#008CBA",
         color: "white",
         border: "none",
