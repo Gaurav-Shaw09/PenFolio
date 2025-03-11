@@ -8,6 +8,7 @@ const Home = () => {
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
+    const [author, setAuthor] = useState("");  
     const [image, setImage] = useState(null);
     const navigate = useNavigate();
 
@@ -37,35 +38,34 @@ const Home = () => {
         }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const loggedInUser = localStorage.getItem("username"); 
-        if (!loggedInUser) {
-            alert("You must be logged in to create a blog.");
-            return;
-        }
+   const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        const formData = new FormData();
-        formData.append("title", title);
-        formData.append("content", content);
-        formData.append("author", loggedInUser);
-        if (image) {
-            formData.append("file", image);
-        }
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
+    formData.append("author", author);  // Manually entered author name
 
-        try {
-            await axios.post("http://localhost:8080/api/blogs", formData, {
-                headers: { "Content-Type": "multipart/form-data" }
-            });
-            fetchBlogs();
-            setTitle("");
-            setContent("");
-            setImage(null);
-            setShowModal(false);
-        } catch (error) {
-            console.error("Error creating blog:", error);
-        }
-    };
+    if (image) {
+        formData.append("file", image);
+    }
+
+    try {
+        await axios.post("http://localhost:8080/api/blogs", formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+
+        fetchBlogs();
+        setTitle("");
+        setContent("");
+        setAuthor(""); // Clear the author field
+        setImage(null);
+        setShowModal(false);
+    } catch (error) {
+        console.error("Error creating blog:", error);
+    }
+};
+
 
     return (
         <div style={styles.container}>
@@ -130,8 +130,8 @@ const Home = () => {
                 ))}
             </div>
 
-            {/* Modal for Creating Blog */}
-            {showModal && (
+              {/* Modal for Creating Blog */}
+              {showModal && (
                 <div style={styles.modal}>
                     <h2>Create a Blog</h2>
                     <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -149,6 +149,14 @@ const Home = () => {
                             onChange={(e) => setContent(e.target.value)} 
                             required 
                             style={styles.textarea}
+                        />
+                        <input 
+                            type="text" 
+                            placeholder="Author Name" 
+                            value={author} 
+                            onChange={(e) => setAuthor(e.target.value)} 
+                            required 
+                            style={styles.input}
                         />
                         <input 
                             type="file" 

@@ -2,12 +2,14 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.Blog;
 import com.example.demo.repository.BlogRepository;
-import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
@@ -51,26 +53,32 @@ public class BlogController {
         String savedPath = saveImage(file);
         return savedPath != null ? "Image uploaded: " + savedPath : "Failed to upload image!";
     }
-    @PostMapping("/api/blogs")
-    public ResponseEntity<?> createBlog(@RequestBody Blog blog) {
-        System.out.println("Received Blog: " + blog); // Debugging
-        if (blog.getTitle() == null || blog.getContent() == null || blog.getAuthor() == null) {
-            return ResponseEntity.badRequest().body("Missing required fields");
-        }
-        return ResponseEntity.ok(blogRepository.save(blog));
-    }
 
-    // 2️⃣ Create a blog with an uploaded image
     @PostMapping
-    public Blog createBlog(@RequestParam("title") String title,
-                           @RequestParam("content") String content,
-                           @RequestParam("author") String author,
-                           @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+    public ResponseEntity<?> createBlog(@RequestParam("title") String title,
+                                        @RequestParam("content") String content,
+                                        @RequestParam("author") String author,
+                                        @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+
+        // ✅ Debugging
+        System.out.println("Received Title: " + title);
+        System.out.println("Received Content: " + content);
+        System.out.println("Received Author: " + author);
+
+        if (title == null || title.trim().isEmpty() ||
+                content == null || content.trim().isEmpty() ||
+                author == null || author.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Title, content, and author cannot be empty.");
+        }
 
         String imagePath = file != null ? saveImage(file) : null;
         Blog blog = new Blog(title, content, author, imagePath);
-        return blogRepository.save(blog);
+
+        blogRepository.save(blog);
+        return ResponseEntity.ok(blog);
     }
+
+
 
     // 3️⃣ Get all blogs
     @GetMapping
@@ -80,44 +88,52 @@ public class BlogController {
 
     // 4️⃣ Get a blog by ID
     @GetMapping("/{id}")
-    public Blog getBlogById(@PathVariable String id) {
-        return blogRepository.findById(id).orElse(null);
+    public ResponseEntity<?> getBlogById(@PathVariable String id) {
+        Optional<Blog> blog = blogRepository.findById(id);
+        return blog.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 5️⃣ Update blog with a new image (optional)
+    // 5️⃣ Update blog (✅ Fix: Ensure Only Owner Can Edit)
     @PutMapping("/{id}")
-    public Blog updateBlog(@PathVariable String id,
-                           @RequestParam("title") String title,
-                           @RequestParam("content") String content,
-                           @RequestParam("author") String author,
-                           @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+    public ResponseEntity<?> updateBlog(@PathVariable String id,
+                                        @RequestParam("title") String title,
+                                        @RequestParam("content") String content,
+                                        @RequestParam(value = "file", required = false) MultipartFile file,
+                                        @AuthenticationPrincipal UserDetails userDetails) throws IOException {
 
         Optional<Blog> existingBlog = blogRepository.findById(id);
         if (existingBlog.isPresent()) {
             Blog updatedBlog = existingBlog.get();
+
+            // ✅ Ensure only the author can edit the blog
+            if (!updatedBlog.getAuthor().equals(userDetails.getUsername())) {
+                return ResponseEntity.status(403).body("You are not allowed to edit this blog.");
+            }
+
             updatedBlog.setTitle(title);
             updatedBlog.setContent(content);
-            updatedBlog.setAuthor(author);
 
             if (file != null) {
                 String imagePath = saveImage(file);
                 updatedBlog.setImagePath(imagePath);
             }
 
-            return blogRepository.save(updatedBlog);
+            return ResponseEntity.ok(blogRepository.save(updatedBlog));
         }
-        return null;
+        return ResponseEntity.notFound().build();
     }
+
+    // 6️⃣ Serve uploaded images
     @GetMapping("/uploads/{filename:.+}")
     public ResponseEntity<Resource> getFile(@PathVariable String filename) {
         try {
-            Path filePath = Paths.get("uploads").resolve(filename).normalize();
-            UrlResource resource = new UrlResource(filePath.toUri());
+            Path filePath = Paths.get(UPLOAD_DIR).resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists()) {
                 return ResponseEntity.ok()
                         .contentType(MediaType.IMAGE_JPEG)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + ((UrlResource) resource).getFilename() + "\"")
-                        .body((Resource) resource);
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                        .body(resource);
             } else {
                 return ResponseEntity.notFound().build();
             }
@@ -126,10 +142,19 @@ public class BlogController {
         }
     }
 
-    // 6️⃣ Delete a blog
+    // 7️⃣ Delete a blog (✅ Fix: Ensure Only Author Can Delete)
     @DeleteMapping("/{id}")
-    public String deleteBlog(@PathVariable String id) {
-        blogRepository.deleteById(id);
-        return "Blog deleted successfully!";
+    public ResponseEntity<?> deleteBlog(@PathVariable String id, @AuthenticationPrincipal UserDetails userDetails) {
+        Optional<Blog> blog = blogRepository.findById(id);
+        if (blog.isPresent()) {
+            // ✅ Ensure only the blog owner can delete it
+            if (!blog.get().getAuthor().equals(userDetails.getUsername())) {
+                return ResponseEntity.status(403).body("You are not allowed to delete this blog.");
+            }
+
+            blogRepository.deleteById(id);
+            return ResponseEntity.ok("Blog deleted successfully!");
+        }
+        return ResponseEntity.notFound().build();
     }
 }

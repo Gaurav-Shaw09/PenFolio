@@ -6,6 +6,7 @@ function Signup() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("USER"); // Default role is USER
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
@@ -14,10 +15,7 @@ function Signup() {
   // Function to send OTP
   const handleSendOtp = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/auth/send-otp",
-        { email }
-      );
+      const response = await axios.post("http://localhost:8080/api/auth/send-otp", { email });
       if (response.data.success) {
         alert("OTP sent to your email!");
         setOtpSent(true);
@@ -33,10 +31,7 @@ function Signup() {
   // Function to verify OTP
   const handleVerifyOtp = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/auth/verify-otp",
-        { email, otp }
-      );
+      const response = await axios.post("http://localhost:8080/api/auth/verify-otp", { email, otp });
       if (response.data.success) {
         alert("OTP verified! You can now sign up.");
         setOtpVerified(true);
@@ -58,10 +53,12 @@ function Signup() {
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/auth/register",
-        { username, password, email }
-      );
+      const response = await axios.post("http://localhost:8080/api/auth/register", {
+        username,
+        password,
+        email,
+        role, // Sending role to backend
+      });
       if (response.data) {
         alert("Registration successful!");
         navigate("/login");
@@ -117,15 +114,17 @@ function Signup() {
           required
           disabled={!otpVerified}
         />
+        {/* Role Selection Dropdown */}
+        <select value={role} onChange={(e) => setRole(e.target.value)} required disabled={!otpVerified}>
+          <option value="USER">User</option>
+          <option value="ADMIN">Admin</option>
+        </select>
         <button type="submit" disabled={!otpVerified}>
           Sign Up
         </button>
         <p>
           Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            style={{ cursor: "pointer", color: "blue" }}
-          >
+          <span onClick={() => navigate("/login")} style={{ cursor: "pointer", color: "blue" }}>
             Login
           </span>
         </p>
