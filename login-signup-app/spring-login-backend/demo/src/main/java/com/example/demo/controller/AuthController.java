@@ -17,17 +17,18 @@ public class AuthController {
 
     // ✅ Register a new user
     @PostMapping("/register")
-    public User registerUser(@RequestBody User user) {
-        return userService.registerUser(user);
+    public ResponseEntity<String> registerUser(@RequestBody User user) {
+        User registeredUser = userService.registerUser(user);
+        return ResponseEntity.ok("User registered successfully: " + registeredUser.getUsername());
     }
 
     // ✅ Login API
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody LoginRequest loginRequest) {
-        boolean isAuthenticated = userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+        User user = userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
 
-        if (isAuthenticated) {
-            return ResponseEntity.ok("Login Successful!");
+        if (user != null) {
+            return ResponseEntity.ok(user); // ✅ Return full user object
         } else {
             return ResponseEntity.status(401).body("Invalid username or password");
         }

@@ -8,8 +8,6 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
@@ -54,6 +52,7 @@ public class BlogController {
         return savedPath != null ? "Image uploaded: " + savedPath : "Failed to upload image!";
     }
 
+    // 2️⃣ Create a blog post
     @PostMapping
     public ResponseEntity<?> createBlog(@RequestParam("title") String title,
                                         @RequestParam("content") String content,
@@ -78,8 +77,6 @@ public class BlogController {
         return ResponseEntity.ok(blog);
     }
 
-
-
     // 3️⃣ Get all blogs
     @GetMapping
     public List<Blog> getAllBlogs() {
@@ -93,20 +90,20 @@ public class BlogController {
         return blog.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 5️⃣ Update blog (✅ Fix: Ensure Only Owner Can Edit)
+    // 5️⃣ Update blog (No Spring Security, using author verification manually)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBlog(@PathVariable String id,
                                         @RequestParam("title") String title,
                                         @RequestParam("content") String content,
-                                        @RequestParam(value = "file", required = false) MultipartFile file,
-                                        @AuthenticationPrincipal UserDetails userDetails) throws IOException {
+                                        @RequestParam("author") String author, // Pass author from frontend
+                                        @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
 
         Optional<Blog> existingBlog = blogRepository.findById(id);
         if (existingBlog.isPresent()) {
             Blog updatedBlog = existingBlog.get();
 
             // ✅ Ensure only the author can edit the blog
-            if (!updatedBlog.getAuthor().equals(userDetails.getUsername())) {
+            if (!updatedBlog.getAuthor().equals(author)) {
                 return ResponseEntity.status(403).body("You are not allowed to edit this blog.");
             }
 
@@ -142,13 +139,13 @@ public class BlogController {
         }
     }
 
-    // 7️⃣ Delete a blog (✅ Fix: Ensure Only Author Can Delete)
+    // 7️⃣ Delete a blog (No Spring Security, using author verification manually)
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBlog(@PathVariable String id, @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> deleteBlog(@PathVariable String id, @RequestParam("author") String author) {
         Optional<Blog> blog = blogRepository.findById(id);
         if (blog.isPresent()) {
             // ✅ Ensure only the blog owner can delete it
-            if (!blog.get().getAuthor().equals(userDetails.getUsername())) {
+            if (!blog.get().getAuthor().equals(author)) {
                 return ResponseEntity.status(403).body("You are not allowed to delete this blog.");
             }
 

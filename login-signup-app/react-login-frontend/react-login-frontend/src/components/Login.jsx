@@ -10,22 +10,25 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8080/api/auth/login', {
-        username,
-        password
-      });
-      if (response.data) {
-        localStorage.setItem('username', response.data.username);
-        alert('Login successful!');
-        navigate('/home');
-      } else {
-        alert('Login failed!');
-      }
+        const response = await axios.post('http://localhost:8080/api/auth/login', {
+            username,
+            password
+        });
+
+        if (response.data.username) {
+            localStorage.setItem('username', response.data.username);
+            localStorage.setItem('role', response.data.role);
+            alert('Login successful!');
+            navigate('/home');
+        } else {
+            alert('Login failed! Invalid credentials.');
+        }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('Login failed!');
+        console.error('Login error:', error.response ? error.response.data : error);
+        alert('Login failed!');
     }
-  };
+};
+
   
   return (
     <div style={{ 
