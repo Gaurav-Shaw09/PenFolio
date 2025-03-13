@@ -17,6 +17,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+
     // ✅ Authenticate user manually (No Spring Security)
     public User authenticate(String username, String password) {
         Optional<User> userOptional = userRepository.findByUsername(username);

@@ -76,6 +76,7 @@ const Home = () => {
                     <span style={styles.navLink} onClick={() => navigate('/home')}>Home</span>
                     <span style={styles.navLink} onClick={() => navigate('/about')}>About Us</span>
                     <span style={styles.navLink} onClick={() => navigate('/contact')}>Contact Us</span>
+                    <span style={styles.navLink} onClick={() => navigate("/profile")}>My Profile</span>
                     <button
                         onClick={handleLogout}
                         style={{ ...styles.button, backgroundColor: "#f44336" }}

@@ -4,7 +4,8 @@ import Signup from "./components/Signup";
 import Home from "./components/Home";
 import About from "./components/About";
 import Contact from "./components/Contact";
-import BlogDetails from "./components/BlogDetails"; // Import BlogDetails
+import BlogDetails from "./components/BlogDetails"; 
+import Profile from "./components/Profile";
 
 function App() {
     return (
@@ -16,7 +17,9 @@ function App() {
                     <Route path="/home" element={<Home />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/contact" element={<Contact />} />
-                    <Route path="/blog/:id" element={<BlogDetails />} /> {/* Blog Details Page */}
+                    <Route path="/blog/:id" element={<BlogDetails />} />
+                    <Route path="/profile/:username" element={<Profile />} />  {/* Profile with Username */}
+                    <Route path="/profile" element={<Profile />} />  {/* Default Profile Route */}
                     <Route path="/" element={<Login />} /> {/* Default to Login */}
                 </Routes>
             </div>

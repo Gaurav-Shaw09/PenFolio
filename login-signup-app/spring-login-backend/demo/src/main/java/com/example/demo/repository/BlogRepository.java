@@ -9,3 +9,4 @@ import java.util.List;
 public interface BlogRepository extends MongoRepository<Blog, String> {
     List<Blog> findByAuthor(String author); // Find blogs by author name
 }
+

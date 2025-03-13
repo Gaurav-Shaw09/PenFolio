@@ -154,4 +154,12 @@ public class BlogController {
         }
         return ResponseEntity.notFound().build();
     }
+
+
+        @GetMapping("/user/{username}")
+        public ResponseEntity<List<Blog>> getBlogsByUser(@PathVariable String username) {
+            List<Blog> userBlogs = blogService.getBlogsByUsername(username);
+            return ResponseEntity.ok(userBlogs);
+        }
+    }
 }
