@@ -1,7 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.entity.User;
-import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -12,17 +12,17 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 @Service
-public class UserProfileService {
+public class ProfileService {
 
     @Autowired
-    private UserRepository userRepository;
+    private ProfileRepository profileRepository;
 
     // Directory to store uploaded profile pictures
     private final Path rootLocation = Paths.get("uploads");
 
     // Update profile description and picture
     public User updateProfile(String username, String description, MultipartFile profilePicture) throws IOException {
-        Optional<User> optionalUser = userRepository.findByUsername(username);
+        Optional<User> optionalUser = profileRepository.findByUsername(username);
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             user.setDescription(description);
@@ -34,7 +34,7 @@ public class UserProfileService {
                 user.setProfilePicture(fileName); // Save the file path in the database
             }
 
-            return userRepository.save(user);
+            return profileRepository.save(user);
         } else {
             throw new RuntimeException("User not found for username: " + username);
         }
@@ -47,5 +47,8 @@ public class UserProfileService {
         } catch (IOException e) {
             throw new RuntimeException("Could not initialize upload directory!");
         }
+    }
+    public Optional<User> findByUsername(String username) {
+        return profileRepository.findByUsername(username);
     }
 }

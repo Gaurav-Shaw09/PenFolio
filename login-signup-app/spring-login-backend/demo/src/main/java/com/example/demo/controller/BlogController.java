@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.entity.Blog;
 import com.example.demo.repository.BlogRepository;
+import com.example.demo.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -10,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,6 +26,9 @@ public class BlogController {
 
     @Autowired
     private BlogRepository blogRepository;
+
+    @Autowired
+    private BlogService blogService;
 
     private static final String UPLOAD_DIR = "uploads/";
 
@@ -155,11 +160,10 @@ public class BlogController {
         return ResponseEntity.notFound().build();
     }
 
-
-        @GetMapping("/user/{username}")
-        public ResponseEntity<List<Blog>> getBlogsByUser(@PathVariable String username) {
-            List<Blog> userBlogs = blogService.getBlogsByUsername(username);
-            return ResponseEntity.ok(userBlogs);
-        }
+    // 8️⃣ Get blogs by user
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<Blog>> getBlogsByUser(@PathVariable String username) {
+        List<Blog> userBlogs = blogService.getBlogsByUsername(username);
+        return ResponseEntity.ok(userBlogs);
     }
 }

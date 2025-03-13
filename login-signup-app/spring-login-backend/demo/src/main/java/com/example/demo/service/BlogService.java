@@ -42,6 +42,9 @@ public class BlogService {
         return null;
     }
 
+    public List<Blog> getBlogsByUsername(String username) {
+        return blogRepository.findByAuthor(username);
+    }
     // Delete a blog
     public void deleteBlog(String id) {
         blogRepository.deleteById(id);

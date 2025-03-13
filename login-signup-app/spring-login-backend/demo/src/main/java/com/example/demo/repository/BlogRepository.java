@@ -6,7 +6,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface BlogRepository extends MongoRepository<Blog, String> {
-    List<Blog> findByAuthor(String author); // Find blogs by author name
+public interface BlogRepository extends MongoRepository<Blog, String> {// Find blogs by author name
+
+    List<Blog> findByAuthor(String username);
 }
 
