@@ -2,6 +2,7 @@ package com.example.demo.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.bson.types.Binary; // Import Binary type for storing image data
 
 @Document(collection = "users")
 public class User {
@@ -11,12 +12,14 @@ public class User {
     private String password;
     private String email;
     private String role; // "USER" or "ADMIN"
-    private String profilePicture; // New field for profile picture
-    private String description; // New field for description
+    private Binary profilePicture; // Store image as binary data
+    private String description; // Field for description
 
+    // Default constructor
     public User() {}
 
-    public User(String username, String password, String email, String role, String profilePicture, String description) {
+    // Parameterized constructor
+    public User(String username, String password, String email, String role, Binary profilePicture, String description) {
         this.username = username;
         this.password = password;
         this.email = email;
@@ -41,8 +44,8 @@ public class User {
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
 
-    public String getProfilePicture() { return profilePicture; }
-    public void setProfilePicture(String profilePicture) { this.profilePicture = profilePicture; }
+    public Binary getProfilePicture() { return profilePicture; }
+    public void setProfilePicture(Binary profilePicture) { this.profilePicture = profilePicture; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

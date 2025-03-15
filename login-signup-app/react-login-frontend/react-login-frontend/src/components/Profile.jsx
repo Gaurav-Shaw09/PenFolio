@@ -89,7 +89,7 @@ const Profile = () => {
             <div style={styles.profilePictureContainer}>
                 {profile?.profilePicture ? (
                     <img
-                        src={`http://localhost:8080/uploads/${profile.profilePicture}`} // Adjust the path as needed
+                        src={`http://localhost:8080/api/profile/${username}/profile-picture`} // Fetch image from backend
                         alt="Profile"
                         style={styles.profilePicture}
                     />

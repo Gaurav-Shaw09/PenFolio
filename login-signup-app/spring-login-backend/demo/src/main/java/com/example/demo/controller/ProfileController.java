@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.entity.User;
 import com.example.demo.service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,6 +37,20 @@ public class ProfileController {
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    // Serve the profile picture as a byte array
+    @GetMapping("/{username}/profile-picture")
+    public ResponseEntity<byte[]> getProfilePicture(@PathVariable String username) {
+        Optional<User> optionalUser = profileService.findByUsername(username);
+        if (optionalUser.isPresent() && optionalUser.get().getProfilePicture() != null) {
+            User user = optionalUser.get();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.IMAGE_JPEG) // Adjust the media type based on the image format
+                    .body(user.getProfilePicture().getData());
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 }
