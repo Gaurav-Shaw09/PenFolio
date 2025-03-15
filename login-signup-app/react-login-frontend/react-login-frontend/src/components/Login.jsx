@@ -15,9 +15,11 @@ function Login() {
             password
         });
 
-        if (response.data.username) {
+        if (response.data.id) {  // ✅ Check if ID is present in response
+            localStorage.setItem('userId', response.data.id);  // ✅ Store userId
             localStorage.setItem('username', response.data.username);
             localStorage.setItem('role', response.data.role);
+            
             alert('Login successful!');
             navigate('/home');
         } else {
@@ -28,6 +30,8 @@ function Login() {
         alert('Login failed!');
     }
 };
+
+
 
   
   return (

@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "http://localhost:5173") // Allow frontend communication
+import java.util.HashMap;
+import java.util.Map;
+
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -17,9 +20,9 @@ public class AuthController {
 
     // ✅ Register a new user
     @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
         User registeredUser = userService.registerUser(user);
-        return ResponseEntity.ok("User registered successfully: " + registeredUser.getUsername());
+        return ResponseEntity.ok(registeredUser); // Return full user object (including userId)
     }
 
     // ✅ Login API
@@ -28,10 +31,16 @@ public class AuthController {
         User user = userService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
 
         if (user != null) {
-            return ResponseEntity.ok(user); // ✅ Return full user object
+            // ✅ Return full user details including id
+            return ResponseEntity.ok(new HashMap<String, String>() {{
+                put("id", user.getId());   // Include user ID
+                put("username", user.getUsername());
+                put("role", user.getRole());
+            }});
         } else {
             return ResponseEntity.status(401).body("Invalid username or password");
         }
     }
+
 
 }

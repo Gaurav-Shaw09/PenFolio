@@ -10,18 +10,19 @@ public class Blog {
     private String title;
     private String content;
     private String author;
-    private String imagePath;  // Stores local image path
+    private String userId;  // ✅ Add userId field
+    private String imagePath;
 
-    public Blog() {}
-
-    public Blog(String title, String content, String author, String imagePath) {
+    // ✅ Constructors
+    public Blog(String title, String content, String author, String userId, String imagePath) {
         this.title = title;
         this.content = content;
         this.author = author;
+        this.userId = userId;  // ✅ Store userId
         this.imagePath = imagePath;
     }
 
-    // Getters and Setters
+    // ✅ Getters & Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -33,6 +34,9 @@ public class Blog {
 
     public String getAuthor() { return author; }
     public void setAuthor(String author) { this.author = author; }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
     public String getImagePath() { return imagePath; }
     public void setImagePath(String imagePath) { this.imagePath = imagePath; }

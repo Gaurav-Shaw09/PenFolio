@@ -38,33 +38,43 @@ const Home = () => {
         }));
     };
 
-   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
-    formData.append("author", author);  // Manually entered author name
-
-    if (image) {
-        formData.append("file", image);
-    }
-
-    try {
-        await axios.post("http://localhost:8080/api/blogs", formData, {
-            headers: { "Content-Type": "multipart/form-data" }
-        });
-
-        fetchBlogs();
-        setTitle("");
-        setContent("");
-        setAuthor(""); // Clear the author field
-        setImage(null);
-        setShowModal(false);
-    } catch (error) {
-        console.error("Error creating blog:", error);
-    }
-};
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+    
+        const userId = localStorage.getItem("userId");  // ✅ Get userId from localStorage
+        if (!userId) {
+            console.error("User not logged in!");
+            alert("Please log in to create a blog.");
+            return;
+        }
+    
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("content", content);
+        formData.append("author", localStorage.getItem("username")); // ✅ Get username from localStorage
+        formData.append("userId", userId);  // ✅ Send userId
+    
+        if (image) {
+            formData.append("file", image);
+        }
+    
+        try {
+            await axios.post("http://localhost:8080/api/blogs", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+    
+            fetchBlogs();
+            setTitle("");
+            setContent("");
+            setImage(null);
+            setShowModal(false);
+        } catch (error) {
+            console.error("Error creating blog:", error);
+        }
+    };
+    
+    
+    
 
 
     return (

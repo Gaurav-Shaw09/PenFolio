@@ -47,7 +47,7 @@ public class BlogController {
         Path path = Paths.get(filePath);
         file.transferTo(path);
 
-        return filePath; // Return stored image path
+        return filePath;
     }
 
     // 1️⃣ Upload an image separately
@@ -57,30 +57,33 @@ public class BlogController {
         return savedPath != null ? "Image uploaded: " + savedPath : "Failed to upload image!";
     }
 
-    // 2️⃣ Create a blog post
     @PostMapping
     public ResponseEntity<?> createBlog(@RequestParam("title") String title,
                                         @RequestParam("content") String content,
                                         @RequestParam("author") String author,
+                                        @RequestParam("userId") String userId,  // ✅ Accept userId
                                         @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
 
         // ✅ Debugging
         System.out.println("Received Title: " + title);
         System.out.println("Received Content: " + content);
         System.out.println("Received Author: " + author);
+        System.out.println("Received User ID: " + userId);  // ✅ Debugging userId
 
         if (title == null || title.trim().isEmpty() ||
                 content == null || content.trim().isEmpty() ||
-                author == null || author.trim().isEmpty()) {
-            return ResponseEntity.badRequest().body("Title, content, and author cannot be empty.");
+                author == null || author.trim().isEmpty() ||
+                userId == null || userId.trim().isEmpty()) {  // ✅ Validate userId
+            return ResponseEntity.badRequest().body("Title, content, author, and userId cannot be empty.");
         }
 
         String imagePath = file != null ? saveImage(file) : null;
-        Blog blog = new Blog(title, content, author, imagePath);
+        Blog blog = new Blog(title, content, author, userId, imagePath);  // ✅ Store userId
 
         blogRepository.save(blog);
         return ResponseEntity.ok(blog);
     }
+
 
     // 3️⃣ Get all blogs
     @GetMapping
@@ -95,20 +98,20 @@ public class BlogController {
         return blog.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // 5️⃣ Update blog (No Spring Security, using author verification manually)
+    // 5️⃣ Update blog (Only the original author can edit)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBlog(@PathVariable String id,
                                         @RequestParam("title") String title,
                                         @RequestParam("content") String content,
-                                        @RequestParam("author") String author, // Pass author from frontend
+                                        @RequestParam("userId") String userId,
                                         @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
 
         Optional<Blog> existingBlog = blogRepository.findById(id);
         if (existingBlog.isPresent()) {
             Blog updatedBlog = existingBlog.get();
 
-            // ✅ Ensure only the author can edit the blog
-            if (!updatedBlog.getAuthor().equals(author)) {
+            // Ensure only the original user can edit
+            if (!updatedBlog.getUserId().equals(userId)) {
                 return ResponseEntity.status(403).body("You are not allowed to edit this blog.");
             }
 
@@ -144,13 +147,12 @@ public class BlogController {
         }
     }
 
-    // 7️⃣ Delete a blog (No Spring Security, using author verification manually)
+    // 7️⃣ Delete a blog (Only the original author can delete)
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBlog(@PathVariable String id, @RequestParam("author") String author) {
+    public ResponseEntity<?> deleteBlog(@PathVariable String id, @RequestParam("userId") String userId) {
         Optional<Blog> blog = blogRepository.findById(id);
         if (blog.isPresent()) {
-            // ✅ Ensure only the blog owner can delete it
-            if (!blog.get().getAuthor().equals(author)) {
+            if (!blog.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(403).body("You are not allowed to delete this blog.");
             }
 
@@ -160,10 +162,10 @@ public class BlogController {
         return ResponseEntity.notFound().build();
     }
 
-    // 8️⃣ Get blogs by user
-    @GetMapping("/user/{username}")
-    public ResponseEntity<List<Blog>> getBlogsByUser(@PathVariable String username) {
-        List<Blog> userBlogs = blogService.getBlogsByUsername(username);
+    // 8️⃣ Get blogs by user ID
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Blog>> getBlogsByUserId(@PathVariable String userId) {
+        List<Blog> userBlogs = blogService.getBlogsByUserId(userId);
         return ResponseEntity.ok(userBlogs);
     }
 }
