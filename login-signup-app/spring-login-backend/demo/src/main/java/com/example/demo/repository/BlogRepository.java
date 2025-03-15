@@ -7,7 +7,6 @@ import java.util.List;
 
 @Repository
 public interface BlogRepository extends MongoRepository<Blog, String> {
-
-    // Find blogs by userId (instead of just author name)
     List<Blog> findByUserId(String userId);
 }
+

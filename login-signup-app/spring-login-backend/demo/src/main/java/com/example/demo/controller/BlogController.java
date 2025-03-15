@@ -49,7 +49,11 @@ public class BlogController {
 
         return filePath;
     }
-
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Blog>> getBlogsByUserId(@PathVariable String userId) {
+        List<Blog> userBlogs = blogService.getBlogsByUserId(userId);
+        return ResponseEntity.ok(userBlogs);
+    }
     // 1️⃣ Upload an image separately
     @PostMapping("/upload")
     public String uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
@@ -92,11 +96,7 @@ public class BlogController {
     }
 
     // 4️⃣ Get a blog by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getBlogById(@PathVariable String id) {
-        Optional<Blog> blog = blogRepository.findById(id);
-        return blog.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
-    }
+
 
     // 5️⃣ Update blog (Only the original author can edit)
     @PutMapping("/{id}")
@@ -162,10 +162,8 @@ public class BlogController {
         return ResponseEntity.notFound().build();
     }
 
-    // 8️⃣ Get blogs by user ID
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Blog>> getBlogsByUserId(@PathVariable String userId) {
-        List<Blog> userBlogs = blogService.getBlogsByUserId(userId);
-        return ResponseEntity.ok(userBlogs);
-    }
+  
+
+
+
 }

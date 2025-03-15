@@ -14,7 +14,6 @@ public class User {
     private String role; // "USER" or "ADMIN"
     private Binary profilePicture;
     private String description;
-
     // Constructors
     public User() {}
 
