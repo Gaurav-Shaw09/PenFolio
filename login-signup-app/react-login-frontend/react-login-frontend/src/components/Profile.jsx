@@ -91,20 +91,18 @@ const Profile = () => {
     const handleDeleteBlog = async (blogId) => {
         try {
             await axios.delete(`http://localhost:8080/api/blogs/${blogId}`, {
-                data: { userId: loggedInUserId } // Pass userId as required in your backend
+                data: { userId: loggedInUserId }, // Pass userId as required in your backend
             });
-    
+
             alert("Blog deleted successfully!");
-    
-            // 🔴 Update the UI by filtering out the deleted blog
-            setBlogs(blogs.filter(blog => blog._id !== blogId));
-    
+
+            // Update the UI by filtering out the deleted blog
+            setBlogs(blogs.filter((blog) => blog._id !== blogId));
         } catch (error) {
             console.error("Error deleting blog:", error.response?.data || error.message);
         }
     };
-    
-    
+
     if (loading) return <p>Loading profile...</p>;
     if (error) return <p style={styles.error}>{error}</p>;
 
@@ -163,24 +161,42 @@ const Profile = () => {
                     {blogs.map((blog) => (
                         <div key={blog._id || blog.id} style={styles.blogCard}>
                             <div style={styles.blogHeader}>
-                                <h3>{blog.title}</h3>
-                                <div
-                                    style={styles.menuButton}
-                                    onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
-                                >
-                                    &#x22EE;
+                                <div>
+                                    <h3>{blog.title}</h3>
+                                    <p style={styles.author}>Author: {blog.author}</p>
                                 </div>
-                                {menuOpen === blog._id && (
-                                    <div style={styles.menuDropdown}>
-                                        <button onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}>Edit</button>
-                                        <button onClick={() => handleDeleteBlog(blog._id || blog.id)}>Delete</button>
+                                <div style={styles.menuContainer}>
+                                    <div
+                                        style={styles.menuButton}
+                                        onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
+                                    >
+                                        &#x22EE;
                                     </div>
-                                )}
+                                    {menuOpen === blog._id && (
+                                        <div style={styles.menuDropdown}>
+                                            <button
+                                                style={styles.menuItem}
+                                                onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                style={styles.menuItem}
+                                                onClick={() => handleDeleteBlog(blog._id || blog.id)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             {blog.imagePath && (
                                 <img src={`http://localhost:8080/${blog.imagePath}`} alt="Blog" style={styles.blogImage} />
                             )}
-                            <button onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })} style={styles.readMoreButton}>
+                            <button
+                                onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })}
+                                style={styles.readMoreButton}
+                            >
                                 Read More
                             </button>
                         </div>
@@ -194,6 +210,7 @@ const Profile = () => {
 };
 
 export default Profile;
+
 const styles = {
     container: {
         width: "100%",
@@ -282,6 +299,45 @@ const styles = {
         justifyContent: "space-between",
         height: "400px", // Increased height for better spacing
         alignItems: "center", // Center content inside
+        position: "relative", // Needed for menu positioning
+    },
+    blogHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start", // Align items to the top
+        width: "100%",
+    },
+    author: {
+        fontSize: "0.9rem",
+        color: "#666",
+        marginTop: "5px",
+    },
+    menuContainer: {
+        position: "relative",
+    },
+    menuButton: {
+        cursor: "pointer",
+        fontSize: "24px",
+        padding: "5px",
+    },
+    menuDropdown: {
+        position: "absolute",
+        top: "30px",
+        right: "0",
+        background: "white",
+        border: "1px solid #ccc",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+        borderRadius: "5px",
+        zIndex: 10,
+    },
+    menuItem: {
+        padding: "10px 20px",
+        border: "none",
+        background: "none",
+        width: "100%",
+        textAlign: "left",
+        cursor: "pointer",
+        display: "block",
     },
     blogImage: {
         width: "220px", // Full width of card
@@ -301,47 +357,5 @@ const styles = {
     noBlogs: {
         textAlign: "center",
         color: "#666",
-    },
-    menuContainer: {
-        position: "relative",
-        display: "inline-block",
-    },
-    menu: {
-        position: "absolute",
-        top: "30px",
-        right: "0",
-        background: "white",
-        border: "1px solid #ccc",
-        boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-        borderRadius: "5px",
-        zIndex: 10,
-    },
-    menuItem: {
-        padding: "10px 20px",
-        border: "none",
-        background: "none",
-        width: "100%",
-        textAlign: "left",
-        cursor: "pointer",
-        display: "block",
-    },
-    blogHeader: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        width: "100%",
-    },
-    menuButton: {
-        cursor: "pointer",
-        fontSize: "24px",
-        padding: "5px",
-    },
-    menuDropdown: {
-        position: "absolute",
-        background: "white",
-        border: "1px solid #ccc",
-        borderRadius: "5px",
-        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-        zIndex: 1,
     },
 };

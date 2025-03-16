@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.Blog;
+import com.example.demo.entity.User;
 import com.example.demo.repository.BlogRepository;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -32,9 +34,12 @@ public class BlogController {
     @Autowired
     private BlogService blogService;
 
+    @Autowired
+    private UserRepository userRepository; // ✅ Inject UserRepository to fetch username
+
     private static final String UPLOAD_DIR = "uploads/";
 
-    // Method to handle image upload
+    // ✅ Method to handle image upload
     private String saveImage(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             return null;
@@ -51,56 +56,70 @@ public class BlogController {
 
         return filePath;
     }
+
+    // ✅ Fetch blogs by user ID
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Blog>> getBlogsByUserId(@PathVariable String userId) {
         List<Blog> userBlogs = blogService.getBlogsByUserId(userId);
         return ResponseEntity.ok(userBlogs);
     }
-    // 1️⃣ Upload an image separately
+
+    // ✅ Upload an image separately
     @PostMapping("/upload")
     public String uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
         String savedPath = saveImage(file);
         return savedPath != null ? "Image uploaded: " + savedPath : "Failed to upload image!";
     }
 
+    // ✅ Create a new blog
     @PostMapping
     public ResponseEntity<?> createBlog(@RequestParam("title") String title,
                                         @RequestParam("content") String content,
                                         @RequestParam("author") String author,
-                                        @RequestParam("userId") String userId,  // ✅ Accept userId
+                                        @RequestParam("userId") String userId,
                                         @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
 
         // ✅ Debugging
         System.out.println("Received Title: " + title);
         System.out.println("Received Content: " + content);
         System.out.println("Received Author: " + author);
-        System.out.println("Received User ID: " + userId);  // ✅ Debugging userId
+        System.out.println("Received User ID: " + userId);
 
         if (title == null || title.trim().isEmpty() ||
                 content == null || content.trim().isEmpty() ||
                 author == null || author.trim().isEmpty() ||
-                userId == null || userId.trim().isEmpty()) {  // ✅ Validate userId
+                userId == null || userId.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Title, content, author, and userId cannot be empty.");
         }
 
+        // ✅ Fetch username from User repository
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found!");
+        }
+        String username = userOptional.get().getUsername(); // ✅ Extract username
+
         String imagePath = file != null ? saveImage(file) : null;
-        Blog blog = new Blog(title, content, author, userId, imagePath);  // ✅ Store userId
+        Blog blog = new Blog(title, content, author, userId, username, imagePath); // ✅ Store username
 
         blogRepository.save(blog);
         return ResponseEntity.ok(blog);
     }
 
-
-    // 3️⃣ Get all blogs
+    // ✅ Get all blogs
     @GetMapping
     public List<Blog> getAllBlogs() {
         return blogRepository.findAll();
     }
 
-    // 4️⃣ Get a blog by ID
+    // ✅ Get a blog by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Blog> getBlogById(@PathVariable String id) {
+        Optional<Blog> blog = blogRepository.findById(id);
+        return blog.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
 
-
-    // 5️⃣ Update blog (Only the original author can edit)
+    // ✅ Update a blog (Only the original author can edit)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBlog(
             @PathVariable String id,
@@ -108,7 +127,6 @@ public class BlogController {
             @RequestParam("content") String content,
             @RequestParam(value = "image", required = false) MultipartFile image) {
 
-        // Debugging logs
         System.out.println("Received Update Request for Blog ID: " + id);
         System.out.println("New Title: " + title);
         System.out.println("New Content: " + content);
@@ -124,7 +142,7 @@ public class BlogController {
         blog.setTitle(title);
         blog.setContent(content);
 
-        // Save new image if provided
+        // ✅ Save new image if provided
         if (image != null && !image.isEmpty()) {
             try {
                 String imagePath = saveImage(image);
@@ -134,13 +152,11 @@ public class BlogController {
             }
         }
 
-        blogRepository.save(blog);  // Save updated blog in database
-
+        blogRepository.save(blog);
         return ResponseEntity.ok("Blog updated successfully!");
     }
 
-
-    // 6️⃣ Serve uploaded images
+    // ✅ Serve uploaded images
     @GetMapping("/uploads/{filename:.+}")
     public ResponseEntity<Resource> getFile(@PathVariable String filename) {
         try {
@@ -159,9 +175,10 @@ public class BlogController {
         }
     }
 
+    // ✅ Delete a blog (Only the original author can delete)
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBlog(@PathVariable String id, @RequestBody Map<String, String> requestBody) {
-        String userId = requestBody.get("userId"); // Get userId from request body
+        String userId = requestBody.get("userId");
         Optional<Blog> blog = blogRepository.findById(id);
 
         if (blog.isPresent()) {
@@ -175,13 +192,8 @@ public class BlogController {
 
         return ResponseEntity.notFound().build();
     }
-    // ✅ Fetch a single blog by its ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Blog> getBlogById(@PathVariable String id) {
-        Optional<Blog> blog = blogRepository.findById(id);
-        return blog.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+
+    // ✅ Fetch image by filename
     private final Path uploadDir = Paths.get("uploads");
 
     @GetMapping("/images/{filename}")
@@ -199,9 +211,4 @@ public class BlogController {
             return ResponseEntity.badRequest().build();
         }
     }
-
-
-
-
-
 }

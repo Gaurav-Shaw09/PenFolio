@@ -9,18 +9,23 @@ public class Blog {
     private String id;
     private String title;
     private String content;
-    private String author;
-    private String userId;  // ✅ Add userId field
+    private String author;  // Author name
+    private String userId;  // User ID (Reference to User Collection)
+    private String username;  // ✅ Store Username directly
     private String imagePath;
 
     // ✅ Constructors
-    public Blog(String title, String content, String author, String userId, String imagePath) {
+    public Blog(String title, String content, String author, String userId, String username, String imagePath) {
         this.title = title;
         this.content = content;
         this.author = author;
-        this.userId = userId;  // ✅ Store userId
+        this.userId = userId;
+        this.username = username;  // ✅ Store username at the time of blog creation
         this.imagePath = imagePath;
     }
+
+    // ✅ Default Constructor
+    public Blog() {}
 
     // ✅ Getters & Setters
     public String getId() { return id; }
@@ -37,6 +42,9 @@ public class Blog {
 
     public String getUserId() { return userId; }
     public void setUserId(String userId) { this.userId = userId; }
+
+    public String getUsername() { return username; }  // ✅ Getter for username
+    public void setUsername(String username) { this.username = username; }  // ✅ Setter for username
 
     public String getImagePath() { return imagePath; }
     public void setImagePath(String imagePath) { this.imagePath = imagePath; }

@@ -98,20 +98,19 @@ const Home = () => {
 
             {/* Create Blog Button */}
             <div style={styles.createButtonContainer}>
-                <button
-                    onClick={() => setShowModal(true)}
-                    style={styles.createButton}
-                >
-                    Create Blog
-                </button>
+                <button onClick={() => setShowModal(true)} style={styles.createButton}>Create Blog</button>
             </div>
 
             <h2 style={{ textAlign: "center", marginTop: "100px" }}>All Blogs</h2>
             <div style={styles.blogContainer}>
                 {blogs.map((blog) => (
                     <div key={blog.id} style={styles.blogCard}>
+                        {/* ✅ Added username at the top */}
+                        <span style={styles.username}>{blog.author}</span>  
+
                         <h3>{blog.title}</h3>
                         <p><b>Author:</b> {blog.author}</p>
+
                         {blog.imagePath && (
                             <img 
                                 src={`http://localhost:8080/${blog.imagePath}`} 
@@ -119,6 +118,7 @@ const Home = () => {
                                 style={styles.blogImage}
                             />
                         )}
+
                         {expanded[blog.id] ? (
                             <>
                                 <p>{blog.content}</p>
@@ -131,11 +131,11 @@ const Home = () => {
                             </>
                         ) : (
                             <button 
-                            onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })} 
-                            style={styles.readMoreButton}
-                        >
-                            Read More
-                        </button>
+                                onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })} 
+                                style={styles.readMoreButton}
+                            >
+                                Read More
+                            </button>
                         )}
                     </div>
                 ))}
@@ -225,6 +225,7 @@ const styles = {
         cursor: 'pointer',
         fontWeight: 'bold',
     },
+    
     button: {
         padding: '10px 15px',
         backgroundColor: '#4facfe',
@@ -249,7 +250,7 @@ const styles = {
     },
     blogContainer: {
         display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)", // Exactly 5 blogs per row
+        gridTemplateColumns: "repeat(5, 1fr)",
         gap: "20px",
         justifyContent: "center",
         maxWidth: "95vw",
@@ -262,14 +263,24 @@ const styles = {
         backgroundColor: "#fff",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
-        height: "400px", // Increased height for better spacing
-        alignItems: "center", // Center content inside
+        alignItems: "center",
+        height: "400px",
+        textAlign: "center",
+        position: "relative",
+    },
+    username: {
+        position: "absolute",
+        top: "10px",
+        left: "10px",
+        backgroundColor: "#f0f0f0",
+        padding: "5px 10px",
+        borderRadius: "5px",
+        fontWeight: "bold",
     },
     blogImage: {
-        width: "220px", // Full width of card
-        height: "100%", // Increased height for better visibility
-        objectFit: "cover", // Ensures the image covers the area properly
+        width: "220px",
+        height: "100%",
+        objectFit: "cover",
         borderRadius: "10px",
     },
     readMoreButton: {
