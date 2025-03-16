@@ -8,7 +8,7 @@ const Home = () => {
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    const [author, setAuthor] = useState("");  
+    const [author, setAuthor] = useState("");
     const [image, setImage] = useState(null);
     const navigate = useNavigate();
 
@@ -40,29 +40,29 @@ const Home = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-    
+
         const userId = localStorage.getItem("userId");  // ✅ Get userId from localStorage
         if (!userId) {
             console.error("User not logged in!");
             alert("Please log in to create a blog.");
             return;
         }
-    
+
         const formData = new FormData();
         formData.append("title", title);
         formData.append("content", content);
         formData.append("author", localStorage.getItem("username")); // ✅ Get username from localStorage
         formData.append("userId", userId);  // ✅ Send userId
-    
+
         if (image) {
             formData.append("file", image);
         }
-    
+
         try {
             await axios.post("http://localhost:8080/api/blogs", formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-    
+
             fetchBlogs();
             setTitle("");
             setContent("");
@@ -72,10 +72,6 @@ const Home = () => {
             console.error("Error creating blog:", error);
         }
     };
-    
-    
-    
-
 
     return (
         <div style={styles.container}>
@@ -105,16 +101,21 @@ const Home = () => {
             <div style={styles.blogContainer}>
                 {blogs.map((blog) => (
                     <div key={blog.id} style={styles.blogCard}>
-                        {/* ✅ Added username at the top */}
-                        <span style={styles.username}>{blog.author}</span>  
+                        {/* ✅ Clickable username */}
+                        <span
+                            style={styles.username}
+                            onClick={() => navigate(`/profile/${blog.author}`)} // Redirect to profile page
+                        >
+                            {blog.author}
+                        </span>
 
                         <h3>{blog.title}</h3>
                         <p><b>Author:</b> {blog.author}</p>
 
                         {blog.imagePath && (
-                            <img 
-                                src={`http://localhost:8080/${blog.imagePath}`} 
-                                alt="Blog" 
+                            <img
+                                src={`http://localhost:8080/${blog.imagePath}`}
+                                alt="Blog"
                                 style={styles.blogImage}
                             />
                         )}
@@ -122,7 +123,7 @@ const Home = () => {
                         {expanded[blog.id] ? (
                             <>
                                 <p>{blog.content}</p>
-                                <button 
+                                <button
                                     onClick={() => toggleReadMore(blog.id)}
                                     style={styles.showLessButton}
                                 >
@@ -130,8 +131,8 @@ const Home = () => {
                                 </button>
                             </>
                         ) : (
-                            <button 
-                                onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })} 
+                            <button
+                                onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })}
                                 style={styles.readMoreButton}
                             >
                                 Read More
@@ -141,38 +142,38 @@ const Home = () => {
                 ))}
             </div>
 
-              {/* Modal for Creating Blog */}
-              {showModal && (
+            {/* Modal for Creating Blog */}
+            {showModal && (
                 <div style={styles.modal}>
                     <h2>Create a Blog</h2>
                     <form onSubmit={handleSubmit} encType="multipart/form-data">
-                        <input 
-                            type="text" 
-                            placeholder="Title" 
-                            value={title} 
-                            onChange={(e) => setTitle(e.target.value)} 
-                            required 
+                        <input
+                            type="text"
+                            placeholder="Title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            required
                             style={styles.input}
                         />
-                        <textarea 
-                            placeholder="Content" 
-                            value={content} 
-                            onChange={(e) => setContent(e.target.value)} 
-                            required 
+                        <textarea
+                            placeholder="Content"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            required
                             style={styles.textarea}
                         />
-                        <input 
-                            type="text" 
-                            placeholder="Author Name" 
-                            value={author} 
-                            onChange={(e) => setAuthor(e.target.value)} 
-                            required 
+                        <input
+                            type="text"
+                            placeholder="Author Name"
+                            value={author}
+                            onChange={(e) => setAuthor(e.target.value)}
+                            required
                             style={styles.input}
                         />
-                        <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={(e) => setImage(e.target.files[0])} 
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setImage(e.target.files[0])}
                             style={{ display: "block", marginBottom: "10px" }}
                         />
                         <button type="submit" style={styles.postButton}>Post Blog</button>
@@ -182,7 +183,7 @@ const Home = () => {
             )}
 
             {/* ✅ Footer */}
-            <footer style={styles.footer}> 
+            <footer style={styles.footer}>
                 © 2025 MyApp. All rights reserved.
             </footer>
         </div>
@@ -225,7 +226,6 @@ const styles = {
         cursor: 'pointer',
         fontWeight: 'bold',
     },
-    
     button: {
         padding: '10px 15px',
         backgroundColor: '#4facfe',
@@ -276,6 +276,7 @@ const styles = {
         padding: "5px 10px",
         borderRadius: "5px",
         fontWeight: "bold",
+        cursor: "pointer", // Make it look clickable
     },
     blogImage: {
         width: "220px",
