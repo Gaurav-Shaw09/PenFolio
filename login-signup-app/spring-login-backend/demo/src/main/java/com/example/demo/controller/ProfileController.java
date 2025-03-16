@@ -5,6 +5,7 @@ import com.example.demo.repository.ProfileRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,14 +26,14 @@ public class ProfileController {
     private UserRepository userRepository;
 
     // Fetch profile by username
-
-    @GetMapping("/{user_id}")
+    @GetMapping("/{username}")
     public ResponseEntity<?> getProfile(@PathVariable String username) {
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        try {
+            Optional<User> profile = profileService.findByUsername(username);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching profile: " + e.getMessage());
         }
-        return ResponseEntity.ok(user);
     }
 
     // Update profile
