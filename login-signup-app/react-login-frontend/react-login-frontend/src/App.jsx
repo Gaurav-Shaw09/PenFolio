@@ -6,6 +6,7 @@ import About from "./components/About";
 import Contact from "./components/Contact";
 import BlogDetails from "./components/BlogDetails"; 
 import Profile from "./components/Profile";
+import EditBlog from "./components/EditBlog";
 
 function App() {
     return (
@@ -21,6 +22,7 @@ function App() {
                     <Route path="/profile/:username" element={<Profile />} />  {/* Profile with Username */}
                     <Route path="/profile" element={<Profile />} />  {/* Default Profile Route */}
                     <Route path="/" element={<Login />} /> {/* Default to Login */}
+                    <Route path="/edit-blog/:id" element={<EditBlog />} />
                 </Routes>
             </div>
         </Router>

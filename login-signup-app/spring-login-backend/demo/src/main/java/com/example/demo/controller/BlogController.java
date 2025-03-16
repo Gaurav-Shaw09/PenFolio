@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:5173")
@@ -100,33 +102,43 @@ public class BlogController {
 
     // 5️⃣ Update blog (Only the original author can edit)
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateBlog(@PathVariable String id,
-                                        @RequestParam("title") String title,
-                                        @RequestParam("content") String content,
-                                        @RequestParam("userId") String userId,
-                                        @RequestParam(value = "file", required = false) MultipartFile file) throws IOException {
+    public ResponseEntity<?> updateBlog(
+            @PathVariable String id,
+            @RequestParam("title") String title,
+            @RequestParam("content") String content,
+            @RequestParam(value = "image", required = false) MultipartFile image) {
 
-        Optional<Blog> existingBlog = blogRepository.findById(id);
-        if (existingBlog.isPresent()) {
-            Blog updatedBlog = existingBlog.get();
+        // Debugging logs
+        System.out.println("Received Update Request for Blog ID: " + id);
+        System.out.println("New Title: " + title);
+        System.out.println("New Content: " + content);
+        System.out.println("New Image: " + (image != null ? image.getOriginalFilename() : "No new image uploaded"));
 
-            // Ensure only the original user can edit
-            if (!updatedBlog.getUserId().equals(userId)) {
-                return ResponseEntity.status(403).body("You are not allowed to edit this blog.");
-            }
+        Optional<Blog> optionalBlog = blogRepository.findById(id);
 
-            updatedBlog.setTitle(title);
-            updatedBlog.setContent(content);
-
-            if (file != null) {
-                String imagePath = saveImage(file);
-                updatedBlog.setImagePath(imagePath);
-            }
-
-            return ResponseEntity.ok(blogRepository.save(updatedBlog));
+        if (!optionalBlog.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Blog not found");
         }
-        return ResponseEntity.notFound().build();
+
+        Blog blog = optionalBlog.get();
+        blog.setTitle(title);
+        blog.setContent(content);
+
+        // Save new image if provided
+        if (image != null && !image.isEmpty()) {
+            try {
+                String imagePath = saveImage(image);
+                blog.setImagePath(imagePath);
+            } catch (IOException e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error saving image");
+            }
+        }
+
+        blogRepository.save(blog);  // Save updated blog in database
+
+        return ResponseEntity.ok("Blog updated successfully!");
     }
+
 
     // 6️⃣ Serve uploaded images
     @GetMapping("/uploads/{filename:.+}")
@@ -147,10 +159,11 @@ public class BlogController {
         }
     }
 
-    // 7️⃣ Delete a blog (Only the original author can delete)
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBlog(@PathVariable String id, @RequestParam("userId") String userId) {
+    public ResponseEntity<?> deleteBlog(@PathVariable String id, @RequestBody Map<String, String> requestBody) {
+        String userId = requestBody.get("userId"); // Get userId from request body
         Optional<Blog> blog = blogRepository.findById(id);
+
         if (blog.isPresent()) {
             if (!blog.get().getUserId().equals(userId)) {
                 return ResponseEntity.status(403).body("You are not allowed to delete this blog.");
@@ -159,10 +172,35 @@ public class BlogController {
             blogRepository.deleteById(id);
             return ResponseEntity.ok("Blog deleted successfully!");
         }
+
         return ResponseEntity.notFound().build();
     }
+    // ✅ Fetch a single blog by its ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Blog> getBlogById(@PathVariable String id) {
+        Optional<Blog> blog = blogRepository.findById(id);
+        return blog.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    private final Path uploadDir = Paths.get("uploads");
 
-  
+    @GetMapping("/images/{filename}")
+    public ResponseEntity<Resource> getImage(@PathVariable String filename) {
+        try {
+            Path filePath = uploadDir.resolve(filename).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists()) {
+                return ResponseEntity.ok().body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
 
 
 

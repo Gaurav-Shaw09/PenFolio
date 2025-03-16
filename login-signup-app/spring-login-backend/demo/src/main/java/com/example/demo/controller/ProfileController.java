@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.entity.Blog;
 import com.example.demo.entity.User;
 import com.example.demo.repository.ProfileRepository;
 import com.example.demo.repository.UserRepository;
@@ -61,6 +62,28 @@ public class ProfileController {
                     .body(user.getProfilePicture().getData());
         } else {
             return ResponseEntity.notFound().build();
+        }
+    }
+    @PutMapping("/blogs/{blogId}")
+    public ResponseEntity<?> updateBlog(
+            @PathVariable String blogId,
+            @RequestBody Blog updatedBlog) {
+        try {
+            Blog blog = profileService.updateBlog(blogId, updatedBlog);
+            return ResponseEntity.ok(blog);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error updating blog: " + e.getMessage());
+        }
+    }
+
+    // ✅ Delete a blog
+    @DeleteMapping("/blogs/{blogId}")
+    public ResponseEntity<?> deleteBlog(@PathVariable String blogId) {
+        try {
+            profileService.deleteBlog(blogId);
+            return ResponseEntity.ok("Blog deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting blog: " + e.getMessage());
         }
     }
 

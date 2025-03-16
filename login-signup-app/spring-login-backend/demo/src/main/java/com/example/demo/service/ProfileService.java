@@ -1,6 +1,8 @@
 package com.example.demo.service;
 
+import com.example.demo.entity.Blog;
 import com.example.demo.entity.User;
+import com.example.demo.repository.BlogRepository;
 import com.example.demo.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,9 @@ public class ProfileService {
 
     @Autowired
     private ProfileRepository profileRepository;
+
+    @Autowired
+    private BlogRepository blogRepository;
 
     // Update profile description and picture
     public User updateProfile(String username, String description, MultipartFile profilePicture) throws IOException {
@@ -37,5 +42,27 @@ public class ProfileService {
     // Fetch profile by username
     public Optional<User> findByUsername(String username) {
         return profileRepository.findByUsername(username);
+    }
+    public Blog updateBlog(String blogId, Blog updatedBlog) {
+        Optional<Blog> existingBlog = blogRepository.findById(blogId);
+        if (existingBlog.isPresent()) {
+            Blog blog = existingBlog.get();
+            blog.setTitle(updatedBlog.getTitle());
+            blog.setContent(updatedBlog.getContent());
+            blog.setImagePath(updatedBlog.getImagePath()); // ✅ Ensure image can be updated
+            return blogRepository.save(blog);
+        } else {
+            throw new RuntimeException("Blog not found");
+        }
+    }
+
+    // ✅ Delete a blog
+    public void deleteBlog(String blogId) {
+        Optional<Blog> blog = blogRepository.findById(blogId);
+        if (blog.isPresent()) {
+            blogRepository.deleteById(blogId);
+        } else {
+            throw new RuntimeException("Blog not found");
+        }
     }
 }
