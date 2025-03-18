@@ -16,6 +16,7 @@ const Profile = () => {
     const [menuOpen, setMenuOpen] = useState(null); // Track menu open state
 
     const loggedInUsername = localStorage.getItem("username");
+    const loggedInUserId = localStorage.getItem("userId");
     
 
     useEffect(() => {
