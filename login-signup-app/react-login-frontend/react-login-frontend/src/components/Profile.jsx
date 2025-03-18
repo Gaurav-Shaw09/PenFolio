@@ -14,11 +14,14 @@ const Profile = () => {
     const [description, setDescription] = useState("");
     const [profilePicture, setProfilePicture] = useState(null);
     const [menuOpen, setMenuOpen] = useState(null); // Track menu open state
+    const [showModal, setShowModal] = useState(false); // State for modal visibility for creating blog
+    const [title, setTitle] = useState(""); // State for blog title
+    const [content, setContent] = useState(""); // State for blog content
+    const [image, setImage] = useState(null); // State for blog image
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
     
-
     useEffect(() => {
         if (!username) {
             loggedInUsername
@@ -45,6 +48,7 @@ const Profile = () => {
 
         fetchProfile();
     }, [username, navigate, loggedInUsername]);
+
     useEffect(() => {
         const fetchUserBlogs = async () => {
             try {
@@ -102,6 +106,40 @@ const Profile = () => {
         }
     };
 
+    const handleCreateBlog = async (e) => {
+        e.preventDefault();
+
+        if (!userId) {
+            console.error("User not logged in!");
+            alert("Please log in to create a blog.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("content", content);
+        formData.append("author", localStorage.getItem("username")); // Get username from localStorage
+        formData.append("userId", userId);  // Send userId
+
+        if (image) {
+            formData.append("file", image);
+        }
+
+        try {
+            await axios.post("http://localhost:8080/api/blogs", formData, {
+                headers: { "Content-Type": "multipart/form-data" }
+            });
+
+            fetchBlogs();
+            setTitle("");
+            setContent("");
+            setImage(null);
+            setShowModal(false);
+        } catch (error) {
+            console.error("Error creating blog:", error);
+        }
+    };
+
     if (loading) return <p>Loading profile...</p>;
     if (error) return <p style={styles.error}>{error}</p>;
 
@@ -153,6 +191,11 @@ const Profile = () => {
                 Back to Home
             </button>
 
+            {/* Create Blog Button */}
+            <div style={styles.createButtonContainer}>
+                <button onClick={() => setShowModal(true)} style={styles.createButton}>Create Blog</button>
+            </div>
+
             <h2 style={{ textAlign: "center", marginTop: "50px" }}>My Blogs</h2>
 
             {blogs.length > 0 ? (
@@ -203,6 +246,38 @@ const Profile = () => {
                 </div>
             ) : (
                 <p style={styles.noBlogs}>No blogs posted yet.</p>
+            )}
+
+            {/* Modal for Creating Blog */}
+            {showModal && (
+                <div style={styles.modal}>
+                    <h2>Create a Blog</h2>
+                    <form onSubmit={handleCreateBlog} encType="multipart/form-data">
+                        <input
+                            type="text"
+                            placeholder="Title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            required
+                            style={styles.input}
+                        />
+                        <textarea
+                            placeholder="Content"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            required
+                            style={styles.textarea}
+                        />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setImage(e.target.files[0])}
+                            style={{ display: "block", marginBottom: "10px" }}
+                        />
+                        <button type="submit" style={styles.postButton}>Post Blog</button>
+                        <button onClick={() => setShowModal(false)} style={styles.closeButton}>Close</button>
+                    </form>
+                </div>
             )}
         </div>
     );
@@ -281,6 +356,19 @@ const styles = {
         border: "1px solid #ccc",
         resize: "vertical",
     },
+    createButtonContainer: {
+        position: "absolute",
+        top: "80px",
+        right: "20px",
+    },
+    createButton: {
+        padding: "10px 15px",
+        backgroundColor: "#28a745",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    },
     blogContainer: {
         width: "100%",
         display: "grid",
@@ -356,5 +444,45 @@ const styles = {
     noBlogs: {
         textAlign: "center",
         color: "#666",
+    },
+    modal: {
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        backgroundColor: "white",
+        padding: "20px",
+        borderRadius: "10px",
+        boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
+        zIndex: 1000,
+    },
+    input: {
+        display: "block",
+        marginBottom: "10px",
+        width: "100%",
+        padding: "5px"
+    },
+    textarea: {
+        display: "block",
+        marginBottom: "10px",
+        width: "100%",
+        padding: "5px"
+    },
+    postButton: {
+        padding: "8px 15px",
+        backgroundColor: "#28a745",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+        marginRight: "10px"
+    },
+    closeButton: {
+        padding: "8px 15px",
+        backgroundColor: "#f44336",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px"
     },
 };
