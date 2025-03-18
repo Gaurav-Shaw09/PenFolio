@@ -64,6 +64,12 @@ public class BlogController {
         return ResponseEntity.ok(userBlogs);
     }
 
+    @GetMapping("/user/username/{username}")
+    public ResponseEntity<List<Blog>> getBlogsByUsername(@PathVariable String username) {
+        List<Blog> userBlogs = blogService.getBlogsByUsername(username);
+        return ResponseEntity.ok(userBlogs);
+    }
+
     // ✅ Upload an image separately
     @PostMapping("/upload")
     public String uploadImage(@RequestParam("file") MultipartFile file) throws IOException {

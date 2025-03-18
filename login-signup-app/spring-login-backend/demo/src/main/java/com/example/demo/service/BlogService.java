@@ -55,7 +55,7 @@ public class BlogService {
         return false;
     }
     public List<Blog> getBlogsByUsername(String username) {
-        return blogRepository.findByUserId(username);
+        return blogRepository.findByUsername(username);
     }
 
 }

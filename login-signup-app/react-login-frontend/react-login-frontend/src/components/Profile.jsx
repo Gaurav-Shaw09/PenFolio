@@ -16,7 +16,7 @@ const Profile = () => {
     const [menuOpen, setMenuOpen] = useState(null); // Track menu open state
 
     const loggedInUsername = localStorage.getItem("username");
-    const loggedInUserId = localStorage.getItem("userId");
+    
 
     useEffect(() => {
         if (!username) {
@@ -44,12 +44,10 @@ const Profile = () => {
 
         fetchProfile();
     }, [username, navigate, loggedInUsername]);
-
     useEffect(() => {
         const fetchUserBlogs = async () => {
-            if (!userId) return;
             try {
-                const response = await axios.get(`http://localhost:8080/api/blogs/user/${userId}`);
+                const response = await axios.get(`http://localhost:8080/api/blogs/user/username/${username}`);
                 setBlogs(response.data);
             } catch (error) {
                 console.error("Error fetching blogs:", error);
