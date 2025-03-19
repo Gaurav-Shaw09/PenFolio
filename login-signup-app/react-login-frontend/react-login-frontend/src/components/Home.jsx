@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
     const [blogs, setBlogs] = useState([]);
@@ -10,17 +10,16 @@ const Home = () => {
     const [content, setContent] = useState("");
     const [author, setAuthor] = useState("");
     const [image, setImage] = useState(null);
+    const [comment, setComment] = useState(""); // Single comment state for the input field
     const navigate = useNavigate();
 
+    const loggedInUsername = localStorage.getItem("username");
+    const loggedInUserId = localStorage.getItem("userId");
+
+    // Fetch blogs
     useEffect(() => {
         fetchBlogs();
     }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem("username"); // Remove stored username
-        localStorage.removeItem("token"); // If using a token-based authentication system
-        navigate("/login"); // Redirect to login page
-    };
 
     const fetchBlogs = async () => {
         try {
@@ -34,14 +33,20 @@ const Home = () => {
     const toggleReadMore = (id) => {
         setExpanded((prevState) => ({
             ...prevState,
-            [id]: !prevState[id]
+            [id]: !prevState[id],
         }));
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("username");
+        localStorage.removeItem("token");
+        navigate("/login");
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const userId = localStorage.getItem("userId");  // ✅ Get userId from localStorage
+        const userId = localStorage.getItem("userId");
         if (!userId) {
             console.error("User not logged in!");
             alert("Please log in to create a blog.");
@@ -51,8 +56,8 @@ const Home = () => {
         const formData = new FormData();
         formData.append("title", title);
         formData.append("content", content);
-        formData.append("author", localStorage.getItem("username")); // ✅ Get username from localStorage
-        formData.append("userId", userId);  // ✅ Send userId
+        formData.append("author", localStorage.getItem("username"));
+        formData.append("userId", userId);
 
         if (image) {
             formData.append("file", image);
@@ -60,9 +65,8 @@ const Home = () => {
 
         try {
             await axios.post("http://localhost:8080/api/blogs", formData, {
-                headers: { "Content-Type": "multipart/form-data" }
+                headers: { "Content-Type": "multipart/form-data" },
             });
-
             fetchBlogs();
             setTitle("");
             setContent("");
@@ -73,16 +77,49 @@ const Home = () => {
         }
     };
 
+    const handleLike = async (blogId) => {
+        try {
+            await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
+                params: { userId: loggedInUserId },
+            });
+            fetchBlogs(); // Refresh blogs after liking
+        } catch (error) {
+            console.error("Error liking blog:", error);
+        }
+    };
+
+    const handleCommentSubmit = async (blogId, e) => {
+        e.preventDefault();
+        if (!comment) return; // Don't submit empty comments
+
+        const newComment = { author: loggedInUsername, content: comment };
+        try {
+            const response = await axios.post(`http://localhost:8080/api/blogs/${blogId}/comment`, newComment);
+            setBlogs(blogs.map((blog) => (blog._id === blogId ? response.data : blog)));
+            setComment(""); // Clear the comment input
+        } catch (error) {
+            console.error("Error adding comment:", error);
+        }
+    };
+
     return (
         <div style={styles.container}>
-            {/* ✅ Navbar */}
+            {/* Navbar */}
             <nav style={styles.navbar}>
-                <div style={{ fontSize: '24px', fontWeight: 'bold' }}>MyApp</div>
+                <div style={{ fontSize: "24px", fontWeight: "bold" }}>MyApp</div>
                 <div style={styles.navCenter}>
-                    <span style={styles.navLink} onClick={() => navigate('/home')}>Home</span>
-                    <span style={styles.navLink} onClick={() => navigate('/about')}>About Us</span>
-                    <span style={styles.navLink} onClick={() => navigate('/contact')}>Contact Us</span>
-                    <span style={styles.navLink} onClick={() => navigate("/profile")}>My Profile</span>
+                    <span style={styles.navLink} onClick={() => navigate("/home")}>
+                        Home
+                    </span>
+                    <span style={styles.navLink} onClick={() => navigate("/about")}>
+                        About Us
+                    </span>
+                    <span style={styles.navLink} onClick={() => navigate("/contact")}>
+                        Contact Us
+                    </span>
+                    <span style={styles.navLink} onClick={() => navigate("/profile")}>
+                        My Profile
+                    </span>
                     <button
                         onClick={handleLogout}
                         style={{ ...styles.button, backgroundColor: "#f44336" }}
@@ -94,23 +131,29 @@ const Home = () => {
 
             {/* Create Blog Button */}
             <div style={styles.createButtonContainer}>
-                <button onClick={() => setShowModal(true)} style={styles.createButton}>Create Blog</button>
+                <button onClick={() => setShowModal(true)} style={styles.createButton}>
+                    Create Blog
+                </button>
             </div>
 
             <h2 style={{ textAlign: "center", marginTop: "100px" }}>All Blogs</h2>
+
+            {/* Blog Container */}
             <div style={styles.blogContainer}>
                 {blogs.map((blog) => (
-                    <div key={blog.id} style={styles.blogCard}>
-                        {/* ✅ Clickable username */}
+                    <div key={blog._id || blog.id} style={styles.blogCard}>
+                        {/* Clickable Username */}
                         <span
                             style={styles.username}
-                            onClick={() => navigate(`/profile/${blog.author}`)} // Redirect to profile page
+                            onClick={() => navigate(`/profile/${blog.author}`)}
                         >
                             {blog.author}
                         </span>
 
                         <h3>{blog.title}</h3>
-                        <p><b>Author:</b> {blog.author}</p>
+                        <p>
+                            <b>Author:</b> {blog.author}
+                        </p>
 
                         {blog.imagePath && (
                             <img
@@ -120,11 +163,11 @@ const Home = () => {
                             />
                         )}
 
-                        {expanded[blog.id] ? (
+                        {expanded[blog._id] ? (
                             <>
                                 <p>{blog.content}</p>
                                 <button
-                                    onClick={() => toggleReadMore(blog.id)}
+                                    onClick={() => toggleReadMore(blog._id)}
                                     style={styles.showLessButton}
                                 >
                                     Show Less
@@ -132,12 +175,53 @@ const Home = () => {
                             </>
                         ) : (
                             <button
-                                onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })}
+                                onClick={() => navigate(`/blog/${blog._id}`, { state: { blog } })}
                                 style={styles.readMoreButton}
                             >
                                 Read More
                             </button>
                         )}
+
+                        {/* Like Button */}
+                        <div style={styles.interactionButtons}>
+                            <button
+                                onClick={() => handleLike(blog._id || blog.id)}
+                                style={styles.likeButton}
+                            >
+                                {blog.likedUsers && blog.likedUsers.includes(loggedInUserId)
+                                    ? `Liked (${blog.likes || 0})`
+                                    : `Like (${blog.likes || 0})`}
+                            </button>
+                        </div>
+
+                        {/* Comments Section */}
+                        <div style={styles.commentsSection}>
+                            <h4>Comments</h4>
+                            {blog.comments &&
+                                blog.comments.map((comment, index) => (
+                                    <div key={comment._id || index} style={styles.comment}>
+                                        <p>
+                                            <strong>{comment.author}:</strong> {comment.content}
+                                        </p>
+                                    </div>
+                                ))}
+                            <form
+                                onSubmit={(e) => handleCommentSubmit(blog._id || blog.id, e)}
+                                style={styles.commentForm}
+                            >
+                                <input
+                                    type="text"
+                                    placeholder="Add a comment..."
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                    required
+                                    style={styles.commentInput}
+                                />
+                                <button type="submit" style={styles.commentButton}>
+                                    Comment
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -176,64 +260,69 @@ const Home = () => {
                             onChange={(e) => setImage(e.target.files[0])}
                             style={{ display: "block", marginBottom: "10px" }}
                         />
-                        <button type="submit" style={styles.postButton}>Post Blog</button>
-                        <button onClick={() => setShowModal(false)} style={styles.closeButton}>Close</button>
+                        <button type="submit" style={styles.postButton}>
+                            Post Blog
+                        </button>
+                        <button onClick={() => setShowModal(false)} style={styles.closeButton}>
+                            Close
+                        </button>
                     </form>
                 </div>
             )}
 
-            {/* ✅ Footer */}
-            <footer style={styles.footer}>
-                © 2025 MyApp. All rights reserved.
-            </footer>
+            {/* Footer */}
+            <footer style={styles.footer}>© 2025 MyApp. All rights reserved.</footer>
         </div>
     );
 };
 
-// ✅ Styles
+
+export default Home;
+
+// Styles (same as before)
 const styles = {
     container: {
-        fontFamily: 'Arial, sans-serif',
-        background: '#f4f4f4',
-        minHeight: '100vh',
-        padding: '20px',
-        textAlign: 'center',
-        position: 'relative',
+        fontFamily: "Arial, sans-serif",
+        background: "#f4f4f4",
+        minHeight: "100vh",
+        padding: "20px",
+        textAlign: "center",
+        position: "relative",
     },
     navbar: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        background: '#4facfe',
-        padding: '15px 50px',
-        color: 'white',
-        fontSize: '18px',
-        boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
-        width: '100%',
-        position: 'fixed',
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        background: "#4facfe",
+        padding: "15px 50px",
+        color: "white",
+        fontSize: "18px",
+        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+        width: "100%",
+        position: "fixed",
         top: 0,
         left: 0,
         zIndex: 1000,
     },
     navCenter: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: '30px',
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "30px",
         flex: 1,
     },
     navLink: {
-        cursor: 'pointer',
-        fontWeight: 'bold',
+        cursor: "pointer",
+        fontWeight: "bold",
     },
     button: {
-        padding: '10px 15px',
-        backgroundColor: '#4facfe',
-        color: 'white',
-        border: 'none',
-        cursor: 'pointer',
-        borderRadius: '5px',
-        marginLeft: '20px',
+        padding: "10px 15px",
+        backgroundColor: "#4facfe",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+        marginLeft: "20px",
     },
     createButtonContainer: {
         position: "absolute",
@@ -276,7 +365,7 @@ const styles = {
         padding: "5px 10px",
         borderRadius: "5px",
         fontWeight: "bold",
-        cursor: "pointer", // Make it look clickable
+        cursor: "pointer",
     },
     blogImage: {
         width: "220px",
@@ -300,6 +389,45 @@ const styles = {
         cursor: "pointer",
         borderRadius: "5px",
     },
+    interactionButtons: {
+        display: "flex",
+        gap: "10px",
+        marginTop: "10px",
+    },
+    likeButton: {
+        padding: "8px 15px",
+        backgroundColor: "#007bff",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    },
+    commentsSection: {
+        marginTop: "15px",
+        width: "100%",
+    },
+    comment: {
+        marginBottom: "10px",
+    },
+    commentForm: {
+        display: "flex",
+        gap: "10px",
+        marginTop: "10px",
+    },
+    commentInput: {
+        flex: 1,
+        padding: "5px",
+        borderRadius: "5px",
+        border: "1px solid #ccc",
+    },
+    commentButton: {
+        padding: "8px 15px",
+        backgroundColor: "#28a745",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    },
     modal: {
         position: "fixed",
         top: "50%",
@@ -315,13 +443,13 @@ const styles = {
         display: "block",
         marginBottom: "10px",
         width: "100%",
-        padding: "5px"
+        padding: "5px",
     },
     textarea: {
         display: "block",
         marginBottom: "10px",
         width: "100%",
-        padding: "5px"
+        padding: "5px",
     },
     postButton: {
         padding: "8px 15px",
@@ -330,7 +458,7 @@ const styles = {
         border: "none",
         cursor: "pointer",
         borderRadius: "5px",
-        marginRight: "10px"
+        marginRight: "10px",
     },
     closeButton: {
         padding: "8px 15px",
@@ -338,17 +466,15 @@ const styles = {
         color: "white",
         border: "none",
         cursor: "pointer",
-        borderRadius: "5px"
+        borderRadius: "5px",
     },
     footer: {
-        background: '#01579b',
-        color: 'white',
-        padding: '15px',
-        textAlign: 'center',
-        position: 'absolute',
+        background: "#01579b",
+        color: "white",
+        padding: "15px",
+        textAlign: "center",
+        position: "absolute",
         bottom: -10,
-        width: '100%',
-    }
+        width: "100%",
+    },
 };
-
-export default Home;
