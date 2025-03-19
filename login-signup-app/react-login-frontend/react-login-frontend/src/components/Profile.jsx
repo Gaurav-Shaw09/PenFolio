@@ -139,7 +139,9 @@ const Profile = () => {
 
     const handleLike = async (blogId) => {
         try {
-            await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, { userId: loggedInUserId });
+            await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
+                params: { userId: loggedInUserId }
+            });
             fetchUserBlogs(); // Refresh blogs after liking
         } catch (error) {
             console.error("Error liking blog:", error);

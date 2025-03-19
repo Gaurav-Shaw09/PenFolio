@@ -4,7 +4,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Document(collection = "blogs")
 public class Blog {
@@ -17,6 +19,7 @@ public class Blog {
     private String username;
     private String imagePath;
     private int likes;
+    private Set<String> likedUsers = new HashSet<>();
     private List<Comment> comments = new ArrayList<>();
 
     // Constructors, Getters, and Setters
@@ -106,5 +109,13 @@ public class Blog {
 
     public void setComments(List<Comment> comments) {
         this.comments = comments;
+    }
+
+    public Set<String> getLikedUsers() {
+        return likedUsers;
+    }
+
+    public void setLikedUsers(Set<String> likedUsers) {
+        this.likedUsers = likedUsers;
     }
 }

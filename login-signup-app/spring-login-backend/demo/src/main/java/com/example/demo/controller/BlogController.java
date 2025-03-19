@@ -225,12 +225,20 @@ public class BlogController {
 
     // Other existing methods...
 
+
+
     @PostMapping("/{id}/like")
-    public ResponseEntity<Blog> likeBlog(@PathVariable String id) {
+    public ResponseEntity<Blog> likeBlog(@PathVariable String id, @RequestParam String userId) {
         Optional<Blog> blogOptional = blogRepository.findById(id);
         if (blogOptional.isPresent()) {
             Blog blog = blogOptional.get();
-            blog.setLikes(blog.getLikes() + 1);
+            if (blog.getLikedUsers().contains(userId)) {
+                blog.setLikes(blog.getLikes() - 1);
+                blog.getLikedUsers().remove(userId);
+            } else {
+                blog.setLikes(blog.getLikes() + 1);
+                blog.getLikedUsers().add(userId);
+            }
             blogRepository.save(blog);
             return ResponseEntity.ok(blog);
         } else {
