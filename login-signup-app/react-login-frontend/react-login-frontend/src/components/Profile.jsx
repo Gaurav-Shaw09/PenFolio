@@ -284,7 +284,7 @@ const Profile = () => {
                                     onClick={() => handleLike(blog._id || blog.id)} 
                                     style={styles.likeButton}
                                 >
-                                    Like ({blog.likes || 0})
+                                    {blog.likedUsers && blog.likedUsers.includes(loggedInUserId) ? `Liked (${blog.likes || 0})` : `Like (${blog.likes || 0})`}
                                 </button>
                             </div>
                             <div style={styles.commentsSection}>
