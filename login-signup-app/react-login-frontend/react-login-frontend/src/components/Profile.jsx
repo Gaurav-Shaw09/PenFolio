@@ -23,6 +23,7 @@ const Profile = () => {
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
 
+    // Fetch profile and blogs
     useEffect(() => {
         if (!username) {
             loggedInUsername
@@ -50,16 +51,17 @@ const Profile = () => {
         fetchProfile();
     }, [username, navigate, loggedInUsername]);
 
-    useEffect(() => {
-        const fetchUserBlogs = async () => {
-            try {
-                const response = await axios.get(`http://localhost:8080/api/blogs/user/username/${username}`);
-                setBlogs(response.data);
-            } catch (error) {
-                console.error("Error fetching blogs:", error);
-            }
-        };
+    // Fetch user blogs
+    const fetchUserBlogs = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/blogs/user/username/${username}`);
+            setBlogs(response.data);
+        } catch (error) {
+            console.error("Error fetching blogs:", error);
+        }
+    };
 
+    useEffect(() => {
         fetchUserBlogs();
     }, [userId]);
 
@@ -138,7 +140,7 @@ const Profile = () => {
     const handleLike = async (blogId) => {
         try {
             await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, { userId: loggedInUserId });
-            fetchUserBlogs();
+            fetchUserBlogs(); // Refresh blogs after liking
         } catch (error) {
             console.error("Error liking blog:", error);
         }
