@@ -239,30 +239,32 @@ const Profile = () => {
                                     <h3>{blog.title}</h3>
                                     <p style={styles.author}>Author: {blog.author}</p>
                                 </div>
-                                <div style={styles.menuContainer}>
-                                    <div
-                                        style={styles.menuButton}
-                                        onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
-                                    >
-                                        ⋮
-                                    </div>
-                                    {menuOpen === blog._id && (
-                                        <div style={styles.menuDropdown}>
-                                            <button
-                                                style={styles.menuItem}
-                                                onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                style={styles.menuItem}
-                                                onClick={() => handleDeleteBlog(blog._id || blog.id)}
-                                            >
-                                                Delete
-                                            </button>
+                                {loggedInUsername === blog.author && ( // Only show menu if logged-in user is the author
+                                    <div style={styles.menuContainer}>
+                                        <div
+                                            style={styles.menuButton}
+                                            onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
+                                        >
+                                            ⋮
                                         </div>
-                                    )}
-                                </div>
+                                        {menuOpen === blog._id && (
+                                            <div style={styles.menuDropdown}>
+                                                <button
+                                                    style={styles.menuItem}
+                                                    onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    style={styles.menuItem}
+                                                    onClick={() => handleDeleteBlog(blog._id || blog.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             {blog.imagePath && (
                                 <img 
@@ -284,7 +286,6 @@ const Profile = () => {
                                 >
                                     Like ({blog.likes || 0})
                                 </button>
-            
                             </div>
                             <div style={styles.commentsSection}>
                                 <h4>Comments</h4>
@@ -463,7 +464,7 @@ const styles = {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        height: "400px",
+        height: "auto",
         alignItems: "center",
         position: "relative",
     },
@@ -507,7 +508,7 @@ const styles = {
     },
     blogImage: {
         width: "220px",
-        height: "100%",
+        height: "220px",
         objectFit: "cover",
         borderRadius: "10px",
     },
