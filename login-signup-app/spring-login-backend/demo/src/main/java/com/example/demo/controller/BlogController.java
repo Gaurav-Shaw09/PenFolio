@@ -1,8 +1,10 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.Blog;
+import com.example.demo.entity.Comment;
 import com.example.demo.entity.User;
 import com.example.demo.repository.BlogRepository;
+import com.example.demo.repository.CommentRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.BlogService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -215,6 +217,39 @@ public class BlogController {
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Autowired
+    private CommentRepository commentRepository;
+
+    // Other existing methods...
+
+    @PostMapping("/{id}/like")
+    public ResponseEntity<Blog> likeBlog(@PathVariable String id) {
+        Optional<Blog> blogOptional = blogRepository.findById(id);
+        if (blogOptional.isPresent()) {
+            Blog blog = blogOptional.get();
+            blog.setLikes(blog.getLikes() + 1);
+            blogRepository.save(blog);
+            return ResponseEntity.ok(blog);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/{id}/comment")
+    public ResponseEntity<Blog> addComment(@PathVariable String id, @RequestBody Comment comment) {
+        Optional<Blog> blogOptional = blogRepository.findById(id);
+        if (blogOptional.isPresent()) {
+            Blog blog = blogOptional.get();
+            comment.setBlogId(id);
+            commentRepository.save(comment);
+            blog.getComments().add((Comment) comment);
+            blogRepository.save(blog);
+            return ResponseEntity.ok(blog);
+        } else {
+            return ResponseEntity.notFound().build();
         }
     }
 }

@@ -13,15 +13,16 @@ const Profile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [description, setDescription] = useState("");
     const [profilePicture, setProfilePicture] = useState(null);
-    const [menuOpen, setMenuOpen] = useState(null); // Track menu open state
-    const [showModal, setShowModal] = useState(false); // State for modal visibility for creating blog
-    const [title, setTitle] = useState(""); // State for blog title
-    const [content, setContent] = useState(""); // State for blog content
-    const [image, setImage] = useState(null); // State for blog image
+    const [menuOpen, setMenuOpen] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [image, setImage] = useState(null);
+    const [comment, setComment] = useState("");
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
-    
+
     useEffect(() => {
         if (!username) {
             loggedInUsername
@@ -94,12 +95,9 @@ const Profile = () => {
     const handleDeleteBlog = async (blogId) => {
         try {
             await axios.delete(`http://localhost:8080/api/blogs/${blogId}`, {
-                data: { userId: loggedInUserId }, // Pass userId as required in your backend
+                data: { userId: loggedInUserId },
             });
-
             alert("Blog deleted successfully!");
-
-            // Update the UI by filtering out the deleted blog
             setBlogs(blogs.filter((blog) => blog._id !== blogId));
         } catch (error) {
             console.error("Error deleting blog:", error.response?.data || error.message);
@@ -108,7 +106,6 @@ const Profile = () => {
 
     const handleCreateBlog = async (e) => {
         e.preventDefault();
-
         if (!userId) {
             console.error("User not logged in!");
             alert("Please log in to create a blog.");
@@ -118,9 +115,8 @@ const Profile = () => {
         const formData = new FormData();
         formData.append("title", title);
         formData.append("content", content);
-        formData.append("author", localStorage.getItem("username")); // Get username from localStorage
-        formData.append("userId", userId);  // Send userId
-
+        formData.append("author", localStorage.getItem("username"));
+        formData.append("userId", userId);
         if (image) {
             formData.append("file", image);
         }
@@ -129,8 +125,7 @@ const Profile = () => {
             await axios.post("http://localhost:8080/api/blogs", formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-
-            fetchBlogs();
+            fetchUserBlogs();
             setTitle("");
             setContent("");
             setImage(null);
@@ -140,8 +135,29 @@ const Profile = () => {
         }
     };
 
-    if (loading) return <p>Loading profile...</p>;
-    if (error) return <p style={styles.error}>{error}</p>;
+    const handleLike = async (blogId) => {
+        try {
+            await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, { userId: loggedInUserId });
+            fetchUserBlogs();
+        } catch (error) {
+            console.error("Error liking blog:", error);
+        }
+    };
+
+    const handleCommentSubmit = async (blogId, e) => {
+        e.preventDefault();
+        const newComment = { author: loggedInUsername, content: comment };
+        try {
+            const response = await axios.post(`http://localhost:8080/api/blogs/${blogId}/comment`, newComment);
+            setBlogs(blogs.map(blog => blog.id === blogId ? response.data : blog));
+            setComment("");
+        } catch (error) {
+            console.error("Error adding comment:", error);
+        }
+    };
+
+    if (loading) return <p style={{ textAlign: "center" }}>Loading profile...</p>;
+    if (error) return <p style={{ color: "red", textAlign: "center" }}>{error}</p>;
 
     return (
         <div style={styles.container}>
@@ -173,13 +189,24 @@ const Profile = () => {
                         <label htmlFor="profilePicture" style={styles.label}>
                             Profile Picture:
                         </label>
-                        <input type="file" id="profilePicture" accept="image/*" onChange={handleFileChange} style={styles.fileInput} />
+                        <input 
+                            type="file" 
+                            id="profilePicture" 
+                            accept="image/*" 
+                            onChange={handleFileChange} 
+                            style={styles.fileInput} 
+                        />
                     </div>
                     <div style={styles.formGroup}>
                         <label htmlFor="description" style={styles.label}>
                             Description:
                         </label>
-                        <textarea id="description" value={description} onChange={handleDescriptionChange} style={styles.textarea} />
+                        <textarea 
+                            id="description" 
+                            value={description} 
+                            onChange={handleDescriptionChange} 
+                            style={styles.textarea} 
+                        />
                     </div>
                     <button type="submit" style={styles.button}>
                         Save Changes
@@ -191,9 +218,10 @@ const Profile = () => {
                 Back to Home
             </button>
 
-            {/* Create Blog Button */}
             <div style={styles.createButtonContainer}>
-                <button onClick={() => setShowModal(true)} style={styles.createButton}>Create Blog</button>
+                <button onClick={() => setShowModal(true)} style={styles.createButton}>
+                    Create Blog
+                </button>
             </div>
 
             <h2 style={{ textAlign: "center", marginTop: "50px" }}>My Blogs</h2>
@@ -212,7 +240,7 @@ const Profile = () => {
                                         style={styles.menuButton}
                                         onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
                                     >
-                                        &#x22EE;
+                                        ⋮
                                     </div>
                                     {menuOpen === blog._id && (
                                         <div style={styles.menuDropdown}>
@@ -233,7 +261,11 @@ const Profile = () => {
                                 </div>
                             </div>
                             {blog.imagePath && (
-                                <img src={`http://localhost:8080/${blog.imagePath}`} alt="Blog" style={styles.blogImage} />
+                                <img 
+                                    src={`http://localhost:8080/${blog.imagePath}`} 
+                                    alt="Blog" 
+                                    style={styles.blogImage} 
+                                />
                             )}
                             <button
                                 onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })}
@@ -241,6 +273,39 @@ const Profile = () => {
                             >
                                 Read More
                             </button>
+                            <div style={styles.interactionButtons}>
+                                <button 
+                                    onClick={() => handleLike(blog._id || blog.id)} 
+                                    style={styles.likeButton}
+                                >
+                                    Like ({blog.likes || 0})
+                                </button>
+            
+                            </div>
+                            <div style={styles.commentsSection}>
+                                <h4>Comments</h4>
+                                {blog.comments && blog.comments.map((comment) => (
+                                    <div key={comment.id} style={styles.comment}>
+                                        <p><strong>{comment.author}:</strong> {comment.content}</p>
+                                    </div>
+                                ))}
+                                <form 
+                                    onSubmit={(e) => handleCommentSubmit(blog._id || blog.id, e)} 
+                                    style={styles.commentForm}
+                                >
+                                    <input
+                                        type="text"
+                                        placeholder="Add a comment..."
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        required
+                                        style={styles.commentInput}
+                                    />
+                                    <button type="submit" style={styles.commentButton}>
+                                        Comment
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -248,7 +313,6 @@ const Profile = () => {
                 <p style={styles.noBlogs}>No blogs posted yet.</p>
             )}
 
-            {/* Modal for Creating Blog */}
             {showModal && (
                 <div style={styles.modal}>
                     <h2>Create a Blog</h2>
@@ -275,7 +339,9 @@ const Profile = () => {
                             style={{ display: "block", marginBottom: "10px" }}
                         />
                         <button type="submit" style={styles.postButton}>Post Blog</button>
-                        <button onClick={() => setShowModal(false)} style={styles.closeButton}>Close</button>
+                        <button onClick={() => setShowModal(false)} style={styles.closeButton}>
+                            Close
+                        </button>
                     </form>
                 </div>
             )}
@@ -312,6 +378,15 @@ const styles = {
         width: "100%",
         height: "100%",
         objectFit: "cover",
+    },
+    placeholderPicture: {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#ddd",
+        color: "#666",
     },
     description: {
         fontSize: "1.2rem",
@@ -372,7 +447,7 @@ const styles = {
     blogContainer: {
         width: "100%",
         display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)", // 5 blogs in a row
+        gridTemplateColumns: "repeat(5, 1fr)",
         gap: "20px",
         padding: "20px",
     },
@@ -384,14 +459,14 @@ const styles = {
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        height: "400px", // Increased height for better spacing
-        alignItems: "center", // Center content inside
-        position: "relative", // Needed for menu positioning
+        height: "400px",
+        alignItems: "center",
+        position: "relative",
     },
     blogHeader: {
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start", // Align items to the top
+        alignItems: "flex-start",
         width: "100%",
     },
     author: {
@@ -427,9 +502,9 @@ const styles = {
         display: "block",
     },
     blogImage: {
-        width: "220px", // Full width of card
-        height: "100%", // Increased height for better visibility
-        objectFit: "cover", // Ensures the image covers the area properly
+        width: "220px",
+        height: "100%",
+        objectFit: "cover",
         borderRadius: "10px",
     },
     readMoreButton: {
@@ -460,13 +535,7 @@ const styles = {
         display: "block",
         marginBottom: "10px",
         width: "100%",
-        padding: "5px"
-    },
-    textarea: {
-        display: "block",
-        marginBottom: "10px",
-        width: "100%",
-        padding: "5px"
+        padding: "5px",
     },
     postButton: {
         padding: "8px 15px",
@@ -475,7 +544,7 @@ const styles = {
         border: "none",
         cursor: "pointer",
         borderRadius: "5px",
-        marginRight: "10px"
+        marginRight: "10px",
     },
     closeButton: {
         padding: "8px 15px",
@@ -483,6 +552,45 @@ const styles = {
         color: "white",
         border: "none",
         cursor: "pointer",
-        borderRadius: "5px"
+        borderRadius: "5px",
+    },
+    interactionButtons: {
+        display: "flex",
+        gap: "10px",
+        marginTop: "10px",
+    },
+    likeButton: {
+        padding: "8px 15px",
+        backgroundColor: "#007bff",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    },
+    commentButton: {
+        padding: "8px 15px",
+        backgroundColor: "#28a745",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    },
+    commentsSection: {
+        marginTop: "15px",
+        width: "100%",
+    },
+    comment: {
+        marginBottom: "10px",
+    },
+    commentForm: {
+        display: "flex",
+        gap: "10px",
+        marginTop: "10px",
+    },
+    commentInput: {
+        flex: 1,
+        padding: "5px",
+        borderRadius: "5px",
+        border: "1px solid #ccc",
     },
 };
