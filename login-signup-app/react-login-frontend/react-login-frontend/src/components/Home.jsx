@@ -353,7 +353,7 @@ const styles = {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        height: "400px",
+        height: "auto",
         textAlign: "center",
         position: "relative",
     },

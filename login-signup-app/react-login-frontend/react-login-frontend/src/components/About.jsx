@@ -10,10 +10,10 @@ function About() {
 
   // LinkedIn Profiles
   const linkedInProfiles = {
-    gaurav: 'https://www.linkedin.com/in/gauravshaw',
-    nishant: 'https://www.linkedin.com/in/kumar-nishant',
-    aditya: 'https://www.linkedin.com/in/aditya-suryavanshi',
-    subham: 'https://www.linkedin.com/in/subham-bangal',
+    gaurav: 'https://www.linkedin.com/in/gaurav-shaw-b25523322/',
+    nishant: 'https://www.linkedin.com/in/kumar-nishant-dev/',
+    aditya: 'https://www.linkedin.com/in/aditya-suryavanshi-3bab7b347/',
+    subham: 'https://www.linkedin.com/in/subham-bangal-261200328/',
   };
 
   const handleLogout = () => {
