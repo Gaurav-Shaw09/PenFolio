@@ -10,7 +10,6 @@ const Home = () => {
     const [content, setContent] = useState("");
     const [author, setAuthor] = useState("");
     const [image, setImage] = useState(null);
-    const [comment, setComment] = useState(""); // Single comment state for the input field
     const navigate = useNavigate();
 
     const loggedInUsername = localStorage.getItem("username");
@@ -88,20 +87,6 @@ const Home = () => {
         }
     };
 
-    const handleCommentSubmit = async (blogId, e) => {
-        e.preventDefault();
-        if (!comment) return; // Don't submit empty comments
-
-        const newComment = { author: loggedInUsername, content: comment };
-        try {
-            const response = await axios.post(`http://localhost:8080/api/blogs/${blogId}/comment`, newComment);
-            setBlogs(blogs.map((blog) => (blog._id === blogId ? response.data : blog)));
-            setComment(""); // Clear the comment input
-        } catch (error) {
-            console.error("Error adding comment:", error);
-        }
-    };
-
     return (
         <div style={styles.container}>
             {/* Navbar */}
@@ -141,7 +126,7 @@ const Home = () => {
             {/* Blog Container */}
             <div style={styles.blogContainer}>
                 {blogs.map((blog) => (
-                    <div key={blog._id || blog.id} style={styles.blogCard}>
+                    <div key={blog.id} style={styles.blogCard}>
                         {/* Clickable Username */}
                         <span
                             style={styles.username}
@@ -163,11 +148,11 @@ const Home = () => {
                             />
                         )}
 
-                        {expanded[blog._id] ? (
+                        {expanded[blog.id] ? (
                             <>
                                 <p>{blog.content}</p>
                                 <button
-                                    onClick={() => toggleReadMore(blog._id)}
+                                    onClick={() => toggleReadMore(blog.id)}
                                     style={styles.showLessButton}
                                 >
                                     Show Less
@@ -175,7 +160,13 @@ const Home = () => {
                             </>
                         ) : (
                             <button
-                                onClick={() => navigate(`/blog/${blog._id}`, { state: { blog } })}
+                                onClick={() => {
+                                    if (!blog.id) {
+                                        console.error("Blog ID is undefined");
+                                        return;
+                                    }
+                                    navigate(`/blog/${blog.id}`, { state: { blog } });
+                                }}
                                 style={styles.readMoreButton}
                             >
                                 Read More
@@ -185,42 +176,13 @@ const Home = () => {
                         {/* Like Button */}
                         <div style={styles.interactionButtons}>
                             <button
-                                onClick={() => handleLike(blog._id || blog.id)}
+                                onClick={() => handleLike(blog.id)}
                                 style={styles.likeButton}
                             >
                                 {blog.likedUsers && blog.likedUsers.includes(loggedInUserId)
                                     ? `Liked (${blog.likes || 0})`
                                     : `Like (${blog.likes || 0})`}
                             </button>
-                        </div>
-
-                        {/* Comments Section */}
-                        <div style={styles.commentsSection}>
-                            <h4>Comments</h4>
-                            {blog.comments &&
-                                blog.comments.map((comment, index) => (
-                                    <div key={comment._id || index} style={styles.comment}>
-                                        <p>
-                                            <strong>{comment.author}:</strong> {comment.content}
-                                        </p>
-                                    </div>
-                                ))}
-                            <form
-                                onSubmit={(e) => handleCommentSubmit(blog._id || blog.id, e)}
-                                style={styles.commentForm}
-                            >
-                                <input
-                                    type="text"
-                                    placeholder="Add a comment..."
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value)}
-                                    required
-                                    style={styles.commentInput}
-                                />
-                                <button type="submit" style={styles.commentButton}>
-                                    Comment
-                                </button>
-                            </form>
                         </div>
                     </div>
                 ))}
@@ -247,14 +209,6 @@ const Home = () => {
                             style={styles.textarea}
                         />
                         <input
-                            type="text"
-                            placeholder="Author Name"
-                            value={author}
-                            onChange={(e) => setAuthor(e.target.value)}
-                            required
-                            style={styles.input}
-                        />
-                        <input
                             type="file"
                             accept="image/*"
                             onChange={(e) => setImage(e.target.files[0])}
@@ -275,7 +229,6 @@ const Home = () => {
         </div>
     );
 };
-
 
 export default Home;
 
@@ -408,25 +361,6 @@ const styles = {
     },
     comment: {
         marginBottom: "10px",
-    },
-    commentForm: {
-        display: "flex",
-        gap: "10px",
-        marginTop: "10px",
-    },
-    commentInput: {
-        flex: 1,
-        padding: "5px",
-        borderRadius: "5px",
-        border: "1px solid #ccc",
-    },
-    commentButton: {
-        padding: "8px 15px",
-        backgroundColor: "#28a745",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
     },
     modal: {
         position: "fixed",

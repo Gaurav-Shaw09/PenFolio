@@ -18,7 +18,6 @@ const Profile = () => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [image, setImage] = useState(null);
-    const [comment, setComment] = useState("");
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
@@ -134,29 +133,6 @@ const Profile = () => {
             setShowModal(false);
         } catch (error) {
             console.error("Error creating blog:", error);
-        }
-    };
-
-    const handleLike = async (blogId) => {
-        try {
-            await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
-                params: { userId: loggedInUserId }
-            });
-            fetchUserBlogs(); // Refresh blogs after liking
-        } catch (error) {
-            console.error("Error liking blog:", error);
-        }
-    };
-
-    const handleCommentSubmit = async (blogId, e) => {
-        e.preventDefault();
-        const newComment = { author: loggedInUsername, content: comment };
-        try {
-            const response = await axios.post(`http://localhost:8080/api/blogs/${blogId}/comment`, newComment);
-            setBlogs(blogs.map(blog => blog.id === blogId ? response.data : blog));
-            setComment("");
-        } catch (error) {
-            console.error("Error adding comment:", error);
         }
     };
 
@@ -279,38 +255,6 @@ const Profile = () => {
                             >
                                 Read More
                             </button>
-                            <div style={styles.interactionButtons}>
-                                <button 
-                                    onClick={() => handleLike(blog._id || blog.id)} 
-                                    style={styles.likeButton}
-                                >
-                                    {blog.likedUsers && blog.likedUsers.includes(loggedInUserId) ? `Liked (${blog.likes || 0})` : `Like (${blog.likes || 0})`}
-                                </button>
-                            </div>
-                            <div style={styles.commentsSection}>
-                                <h4>Comments</h4>
-                                {blog.comments && blog.comments.map((comment) => (
-                                    <div key={comment.id} style={styles.comment}>
-                                        <p><strong>{comment.author}:</strong> {comment.content}</p>
-                                    </div>
-                                ))}
-                                <form 
-                                    onSubmit={(e) => handleCommentSubmit(blog._id || blog.id, e)} 
-                                    style={styles.commentForm}
-                                >
-                                    <input
-                                        type="text"
-                                        placeholder="Add a comment..."
-                                        value={comment}
-                                        onChange={(e) => setComment(e.target.value)}
-                                        required
-                                        style={styles.commentInput}
-                                    />
-                                    <button type="submit" style={styles.commentButton}>
-                                        Comment
-                                    </button>
-                                </form>
-                            </div>
                         </div>
                     ))}
                 </div>
@@ -558,44 +502,5 @@ const styles = {
         border: "none",
         cursor: "pointer",
         borderRadius: "5px",
-    },
-    interactionButtons: {
-        display: "flex",
-        gap: "10px",
-        marginTop: "10px",
-    },
-    likeButton: {
-        padding: "8px 15px",
-        backgroundColor: "#007bff",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
-    },
-    commentButton: {
-        padding: "8px 15px",
-        backgroundColor: "#28a745",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
-    },
-    commentsSection: {
-        marginTop: "15px",
-        width: "100%",
-    },
-    comment: {
-        marginBottom: "10px",
-    },
-    commentForm: {
-        display: "flex",
-        gap: "10px",
-        marginTop: "10px",
-    },
-    commentInput: {
-        flex: 1,
-        padding: "5px",
-        borderRadius: "5px",
-        border: "1px solid #ccc",
     },
 };
