@@ -136,6 +136,17 @@ const Profile = () => {
         }
     };
 
+    const handleLike = async (blogId) => {
+        try {
+            await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
+                params: { userId: loggedInUserId }
+            });
+            fetchUserBlogs(); // Refresh blogs after liking
+        } catch (error) {
+            console.error("Error liking blog:", error);
+        }
+    };
+
     if (loading) return <p style={{ textAlign: "center" }}>Loading profile...</p>;
     if (error) return <p style={{ color: "red", textAlign: "center" }}>{error}</p>;
 
@@ -255,6 +266,14 @@ const Profile = () => {
                             >
                                 Read More
                             </button>
+                            <div style={styles.interactionButtons}>
+                                <button 
+                                    onClick={() => handleLike(blog._id || blog.id)} 
+                                    style={styles.likeButton}
+                                >
+                                    {blog.likedUsers && blog.likedUsers.includes(loggedInUserId) ? `Liked (${blog.likes || 0})` : `Like (${blog.likes || 0})`}
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -503,4 +522,17 @@ const styles = {
         cursor: "pointer",
         borderRadius: "5px",
     },
+    interactionButtons: {
+        display: "flex",
+        gap: "10px",
+        marginTop: "10px",
+    },
+    likeButton: {
+        padding: "8px 15px",
+        backgroundColor: "#007bff",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    }
 };

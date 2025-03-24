@@ -8,7 +8,6 @@ const Home = () => {
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
-    const [author, setAuthor] = useState("");
     const [image, setImage] = useState(null);
     const navigate = useNavigate();
 
