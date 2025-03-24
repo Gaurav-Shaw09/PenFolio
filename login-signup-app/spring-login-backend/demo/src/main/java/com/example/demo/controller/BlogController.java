@@ -260,4 +260,45 @@ public class BlogController {
             return ResponseEntity.notFound().build();
         }
     }
+    @DeleteMapping("/{blogId}/comments/{commentId}")
+    public ResponseEntity<?> deleteComment(
+            @PathVariable String blogId,
+            @PathVariable String commentId,
+            @RequestBody Map<String, String> requestBody) {
+
+        String currentUsername = requestBody.get("username"); // Get username from request
+
+        Optional<Comment> commentOptional = commentRepository.findById(commentId);
+        if (commentOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Optional<Blog> blogOptional = blogRepository.findById(blogId);
+        if (blogOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Comment comment = commentOptional.get();
+        Blog blog = blogOptional.get();
+
+        // Check if current user is either:
+        // 1. The comment author (by username)
+        // 2. The blog author (by username)
+        boolean isCommentAuthor = currentUsername.equals(comment.getAuthor());
+        boolean isBlogAuthor = currentUsername.equals(blog.getAuthor());
+
+        if (!isCommentAuthor && !isBlogAuthor) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can only delete your own comments or comments on your posts");
+        }
+
+        // Remove comment from blog's comments list
+        blog.getComments().removeIf(c -> c.getId().equals(commentId));
+        blogRepository.save(blog);
+
+        // Delete the comment itself
+        commentRepository.deleteById(commentId);
+
+        return ResponseEntity.ok("Comment deleted successfully");
+    }
 }

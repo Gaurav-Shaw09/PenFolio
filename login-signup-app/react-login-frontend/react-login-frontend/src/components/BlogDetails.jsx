@@ -5,19 +5,19 @@ import axios from "axios";
 const BlogDetails = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { id } = useParams(); // Get the blog ID from the URL
-    const [blog, setBlog] = useState(location.state?.blog || null); // Use location.state if available
+    const { id } = useParams();
+    const [blog, setBlog] = useState(location.state?.blog || null);
     const [likes, setLikes] = useState(0);
     const [liked, setLiked] = useState(false);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
-    const [loading, setLoading] = useState(!location.state?.blog); // Load only if blog is not in location.state
-    const [error, setError] = useState(null); // State to handle errors
+    const [loading, setLoading] = useState(!location.state?.blog);
+    const [error, setError] = useState(null);
+    const [commentMenuOpen, setCommentMenuOpen] = useState(null);
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
 
-    // Fetch blog data if not available in location.state
     useEffect(() => {
         const fetchBlog = async () => {
             try {
@@ -25,7 +25,6 @@ const BlogDetails = () => {
                 setBlog(response.data);
                 setLikes(response.data.likes || 0);
                 setComments(response.data.comments || []);
-                // Check if the current user has already liked the blog
                 if (response.data.likedUsers && response.data.likedUsers.includes(loggedInUserId)) {
                     setLiked(true);
                 }
@@ -42,12 +41,9 @@ const BlogDetails = () => {
 
     const handleLike = async () => {
         try {
-            // Send like request to the backend
             const response = await axios.post(`http://localhost:8080/api/blogs/${id}/like`, null, {
                 params: { userId: loggedInUserId },
             });
-
-            // Update the blog state with the response data
             setBlog(response.data);
             setLikes(response.data.likes);
             setLiked(response.data.likedUsers.includes(loggedInUserId));
@@ -62,16 +58,43 @@ const BlogDetails = () => {
 
         const commentData = { author: loggedInUsername, content: newComment };
         try {
-            // Send comment request to the backend
             const response = await axios.post(`http://localhost:8080/api/blogs/${blog.id}/comment`, commentData);
-
-            // Update the blog state with the response data
             setBlog(response.data);
             setComments(response.data.comments);
             setNewComment("");
         } catch (error) {
             console.error("Error adding comment:", error);
             setError("Failed to add comment. Please try again.");
+        }
+    };
+    const handleDeleteComment = async (commentId) => {
+        try {
+            await axios.delete(
+                `http://localhost:8080/api/blogs/${blog.id}/comments/${commentId}`,
+                {
+                    data: { 
+                        username: loggedInUsername
+                    },
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            // Show success notification
+            alert("Comment deleted successfully!");
+            
+            // Update UI immediately
+            setComments(comments.filter(comment => comment._id !== commentId));
+            setCommentMenuOpen(null);
+            
+            // Refresh the page after 1 second
+            setTimeout(() => {
+                window.location.reload();
+            }, 10);
+            
+        } catch (error) {
+            setError(error.response?.data || "Failed to delete comment");
         }
     };
 
@@ -97,18 +120,41 @@ const BlogDetails = () => {
             )}
             <p style={styles.content}>{blog.content}</p>
 
-            {/* Like Button */}
             <button onClick={handleLike} style={styles.likeButton}>
                 {liked ? "❤️ Liked" : "🤍 Like"} ({likes})
             </button>
 
-            {/* Comment Section */}
             <div style={styles.commentSection}>
                 <h3>Comments</h3>
                 <ul style={styles.commentList}>
-                    {comments.map((comment, index) => (
-                        <li key={index} style={styles.commentItem}>
-                            <p><strong>{comment.author}:</strong> {comment.content}</p>
+                    {comments.map((comment) => (
+                        <li key={comment.id} style={styles.commentItem}>
+                            <div style={styles.commentHeader}>
+                                <p style={styles.commentText}><strong>{comment.author}:</strong> {comment.content}</p>
+                                {(comment.author === loggedInUsername || blog.author === loggedInUsername) && (
+                                    <div style={styles.commentMenuContainer}>
+                                        <div
+                                            style={styles.commentMenuButton}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setCommentMenuOpen(commentMenuOpen === comment.id ? null : comment.id);
+                                            }}
+                                        >
+                                            ⋮
+                                        </div>
+                                        {commentMenuOpen === comment.id && (
+                                            <div style={styles.commentMenu}>
+                                                <button
+                                                    style={styles.commentMenuItem}
+                                                    onClick={() => handleDeleteComment(comment.id)}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </li>
                     ))}
                 </ul>
@@ -124,7 +170,6 @@ const BlogDetails = () => {
                 </form>
             </div>
 
-            {/* Error Message */}
             {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
         </div>
     );
@@ -191,6 +236,52 @@ const styles = {
         padding: "10px",
         borderRadius: "5px",
         marginBottom: "5px",
+        position: "relative",
+    },
+    commentHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    commentText: {
+        flex: 1,
+        marginRight: "10px",
+    },
+    commentMenuContainer: {
+        position: "relative",
+    },
+    commentMenuButton: {
+        cursor: "pointer",
+        padding: "5px",
+        fontSize: "18px",
+        color: "#666",
+        '&:hover': {
+            color: "#333",
+        },
+    },
+    commentMenu: {
+        position: "absolute",
+        right: 0,
+        top: "100%",
+        backgroundColor: "white",
+        border: "1px solid #ddd",
+        borderRadius: "4px",
+        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+        zIndex: 100,
+        minWidth: "100px",
+    },
+    commentMenuItem: {
+        padding: "8px 15px",
+        display: "block",
+        width: "100%",
+        textAlign: "left",
+        border: "none",
+        backgroundColor: "transparent",
+        cursor: "pointer",
+        color: "#f44336",
+        '&:hover': {
+            backgroundColor: "#f5f5f5",
+        },
     },
     commentInputContainer: {
         display: "flex",

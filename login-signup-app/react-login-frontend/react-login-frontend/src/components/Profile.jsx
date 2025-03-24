@@ -21,13 +21,18 @@ const Profile = () => {
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
-
+       
+   
+   
     // Fetch profile and blogs
     useEffect(() => {
         if (!username) {
             loggedInUsername
                 ? navigate(`/profile/${loggedInUsername}`, { replace: true })
                 : navigate("/login", { replace: true });
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1);
             return;
         }
 
@@ -91,6 +96,9 @@ const Profile = () => {
             console.error("Error updating profile:", error);
             setError("Failed to update profile. Please try again.");
         }
+        setTimeout(() => {
+            window.location.reload();
+        }, 1);
     };
 
     const handleDeleteBlog = async (blogId) => {
@@ -103,6 +111,9 @@ const Profile = () => {
         } catch (error) {
             console.error("Error deleting blog:", error.response?.data || error.message);
         }
+        setTimeout(() => {
+            window.location.reload();
+        }, 1);
     };
 
     const handleCreateBlog = async (e) => {
