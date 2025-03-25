@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Profile = () => {
     const { username } = useParams();
@@ -21,18 +22,16 @@ const Profile = () => {
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
-       
-   
-   
+
     // Fetch profile and blogs
     useEffect(() => {
         if (!username) {
             loggedInUsername
                 ? navigate(`/profile/${loggedInUsername}`, { replace: true })
                 : navigate("/login", { replace: true });
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1);
             return;
         }
 
@@ -152,179 +151,374 @@ const Profile = () => {
             await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
                 params: { userId: loggedInUserId }
             });
-            fetchUserBlogs(); // Refresh blogs after liking
+            fetchUserBlogs();
         } catch (error) {
             console.error("Error liking blog:", error);
         }
     };
 
-    if (loading) return <p style={{ textAlign: "center" }}>Loading profile...</p>;
-    if (error) return <p style={{ color: "red", textAlign: "center" }}>{error}</p>;
+    if (loading) return (
+        <div style={styles.loadingContainer}>
+            <div style={styles.spinner}></div>
+        </div>
+    );
+
+    if (error) return (
+        <div style={styles.errorContainer}>
+            <div style={styles.errorCard}>
+                <h2 style={styles.errorTitle}>Oops!</h2>
+                <p style={styles.errorText}>{error}</p>
+                <button 
+                    onClick={() => navigate("/home")} 
+                    style={styles.errorButton}
+                >
+                    Return Home
+                </button>
+            </div>
+        </div>
+    );
 
     return (
-        <div style={styles.container}>
-            <h1 style={styles.title}>{profile?.username}'s Profile</h1>
-
-            <div style={styles.profilePictureContainer}>
-                {profile?.profilePicture ? (
-                    <img
-                        src={`http://localhost:8080/api/profile/${username}/profile-picture`}
-                        alt="Profile"
-                        style={styles.profilePicture}
-                    />
-                ) : (
-                    <div style={styles.placeholderPicture}>No Profile Picture</div>
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            style={styles.container}
+        >
+            {/* Header */}
+            <header style={styles.header}>
+                <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/home")} 
+                    style={styles.backButton}
+                >
+                    ← Back to Home
+                </motion.button>
+                
+                <h1 style={styles.title}>
+                    <span style={styles.titleHighlight}>{profile?.username}'s</span> Profile
+                </h1>
+                
+                {loggedInUsername === username && (
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowModal(true)}
+                        style={styles.createButton}
+                    >
+                        + New Blog
+                    </motion.button>
                 )}
-            </div>
+            </header>
 
-            <p style={styles.description}>{profile?.description || "No description available."}</p>
-
-            {loggedInUsername === username && (
-                <button onClick={() => setIsEditing(!isEditing)} style={styles.button}>
-                    {isEditing ? "Cancel" : "Update Profile"}
-                </button>
-            )}
-
-            {isEditing && (
-                <form onSubmit={handleSubmit} style={styles.form}>
-                    <div style={styles.formGroup}>
-                        <label htmlFor="profilePicture" style={styles.label}>
-                            Profile Picture:
-                        </label>
-                        <input 
-                            type="file" 
-                            id="profilePicture" 
-                            accept="image/*" 
-                            onChange={handleFileChange} 
-                            style={styles.fileInput} 
+            {/* Profile Section */}
+            <section style={styles.profileSection}>
+                <motion.div 
+                    whileHover={{ scale: 1.03 }}
+                    style={styles.profilePictureContainer}
+                >
+                    {profile?.profilePicture ? (
+                        <img
+                            src={`http://localhost:8080/api/profile/${username}/profile-picture`}
+                            alt="Profile"
+                            style={styles.profilePicture}
                         />
-                    </div>
-                    <div style={styles.formGroup}>
-                        <label htmlFor="description" style={styles.label}>
-                            Description:
-                        </label>
-                        <textarea 
-                            id="description" 
-                            value={description} 
-                            onChange={handleDescriptionChange} 
-                            style={styles.textarea} 
-                        />
-                    </div>
-                    <button type="submit" style={styles.button}>
-                        Save Changes
-                    </button>
-                </form>
-            )}
+                    ) : (
+                        <div style={styles.placeholderPicture}>
+                            <div style={styles.initials}>
+                                {profile?.username?.charAt(0).toUpperCase()}
+                            </div>
+                        </div>
+                    )}
+                </motion.div>
 
-            <button onClick={() => navigate("/home")} style={styles.button}>
-                Back to Home
-            </button>
+                <div style={styles.profileInfo}>
+                    <h2 style={styles.username}>{profile?.username}</h2>
+                    <p style={styles.description}>
+                        {profile?.description || "No description yet. Share something about yourself!"}
+                    </p>
+                    
+                    {loggedInUsername === username && (
+                        <motion.button
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => setIsEditing(!isEditing)}
+                            style={isEditing ? styles.cancelButton : styles.editButton}
+                        >
+                            {isEditing ? "Cancel Editing" : "Edit Profile"}
+                        </motion.button>
+                    )}
+                </div>
+            </section>
 
-            <div style={styles.createButtonContainer}>
-                <button onClick={() => setShowModal(true)} style={styles.createButton}>
-                    Create Blog
-                </button>
-            </div>
+            {/* Edit Profile Form */}
+            <AnimatePresence>
+                {isEditing && (
+                    <motion.form
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        onSubmit={handleSubmit}
+                        style={styles.editForm}
+                    >
+                        <div style={styles.formGroup}>
+                            <label htmlFor="profilePicture" style={styles.label}>
+                                Profile Picture
+                            </label>
+                            <div style={styles.fileInputContainer}>
+                                <label htmlFor="profilePicture" style={styles.fileInputLabel}>
+                                    Choose File
+                                </label>
+                                <input 
+                                    type="file" 
+                                    id="profilePicture" 
+                                    accept="image/*" 
+                                    onChange={handleFileChange} 
+                                    style={styles.fileInput} 
+                                />
+                                <span style={styles.fileName}>
+                                    {profilePicture ? profilePicture.name : "No file selected"}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div style={styles.formGroup}>
+                            <label htmlFor="description" style={styles.label}>
+                                About Me
+                            </label>
+                            <textarea 
+                                id="description" 
+                                value={description} 
+                                onChange={handleDescriptionChange} 
+                                style={styles.textarea}
+                                placeholder="Tell your story..."
+                            />
+                        </div>
+                        
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="submit" 
+                            style={styles.saveButton}
+                        >
+                            Save Changes
+                        </motion.button>
+                    </motion.form>
+                )}
+            </AnimatePresence>
 
-            <h2 style={{ textAlign: "center", marginTop: "50px" }}>My Blogs</h2>
-
-            {blogs.length > 0 ? (
-                <div style={styles.blogContainer}>
-                    {blogs.map((blog) => (
-                        <div key={blog._id || blog.id} style={styles.blogCard}>
-                            <div style={styles.blogHeader}>
-                                <div>
-                                    <h3>{blog.title}</h3>
-                                    <p style={styles.author}>Author: {blog.author}</p>
-                                </div>
-                                {loggedInUsername === blog.author && ( // Only show menu if logged-in user is the author
-                                    <div style={styles.menuContainer}>
-                                        <div
-                                            style={styles.menuButton}
-                                            onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
-                                        >
-                                            ⋮
-                                        </div>
-                                        {menuOpen === blog._id && (
-                                            <div style={styles.menuDropdown}>
+            {/* Blogs Section */}
+            <section style={styles.blogsSection}>
+                <h2 style={styles.sectionTitle}>
+                    {profile?.username}'s Blog Posts
+                </h2>
+                
+                {blogs.length > 0 ? (
+                    <div style={styles.blogGrid}>
+                        {blogs.map((blog) => (
+                            <motion.article
+                                whileHover={{ y: -5, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
+                                key={blog._id || blog.id}
+                                style={styles.blogCard}
+                            >
+                                {blog.imagePath && (
+                                    <div style={styles.blogImageContainer}>
+                                        <img 
+                                            src={`http://localhost:8080/${blog.imagePath}`} 
+                                            alt="Blog" 
+                                            style={styles.blogImage}
+                                            onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })}
+                                        />
+                                    </div>
+                                )}
+                                
+                                <div style={styles.blogContent}>
+                                    <div style={styles.blogHeader}>
+                                        <h3 style={styles.blogTitle}>{blog.title}</h3>
+                                        {loggedInUsername === blog.author && (
+                                            <div style={styles.menuContainer}>
                                                 <button
-                                                    style={styles.menuItem}
-                                                    onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}
+                                                    style={styles.menuButton}
+                                                    onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
                                                 >
-                                                    Edit
+                                                    ⋮
                                                 </button>
-                                                <button
-                                                    style={styles.menuItem}
-                                                    onClick={() => handleDeleteBlog(blog._id || blog.id)}
-                                                >
-                                                    Delete
-                                                </button>
+                                                {menuOpen === blog._id && (
+                                                    <div style={styles.menuDropdown}>
+                                                        <button
+                                                            style={styles.menuItem}
+                                                            onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            style={styles.menuItem}
+                                                            onClick={() => handleDeleteBlog(blog._id || blog.id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
-                            {blog.imagePath && (
-                                <img 
-                                    src={`http://localhost:8080/${blog.imagePath}`} 
-                                    alt="Blog" 
-                                    style={styles.blogImage} 
-                                />
-                            )}
-                            <button
-                                onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })}
-                                style={styles.readMoreButton}
+                                    
+                                    <p style={styles.blogExcerpt}>
+                                        {blog.content.length > 120 
+                                            ? `${blog.content.substring(0, 120)}...` 
+                                            : blog.content}
+                                    </p>
+                                    
+                                    <div style={styles.blogFooter}>
+                                        <div style={styles.blogMeta}>
+                                            <span style={styles.blogAuthor}>By {blog.author}</span>
+                                            <span style={styles.blogDate}>Posted on {new Date(blog.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                        
+                                        <div style={styles.blogActions}>
+                                            <button
+                                                onClick={() => handleLike(blog._id || blog.id)} 
+                                                style={blog.likedUsers && blog.likedUsers.includes(loggedInUserId) 
+                                                    ? styles.likedButton 
+                                                    : styles.likeButton}
+                                            >
+                                                ♥ {blog.likes || 0}
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })}
+                                                style={styles.readMoreButton}
+                                            >
+                                                Read More →
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.article>
+                        ))}
+                    </div>
+                ) : (
+                    <div style={styles.noBlogsContainer}>
+                        <div style={styles.noBlogsIllustration}>
+                            <div style={styles.pencilIcon}>✏️</div>
+                            <div style={styles.paperIcon}>📄</div>
+                        </div>
+                        <h3 style={styles.noBlogsTitle}>No Blogs Yet</h3>
+                        <p style={styles.noBlogsText}>
+                            {loggedInUsername === username 
+                                ? "You haven't written any blogs yet. Share your thoughts with the world!"
+                                : "This user hasn't published any blogs yet."}
+                        </p>
+                        {loggedInUsername === username && (
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setShowModal(true)}
+                                style={styles.createFirstBlogButton}
                             >
-                                Read More
-                            </button>
-                            <div style={styles.interactionButtons}>
+                                Create Your First Blog
+                            </motion.button>
+                        )}
+                    </div>
+                )}
+            </section>
+
+            {/* Create Blog Modal */}
+            <AnimatePresence>
+                {showModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={styles.modalOverlay}
+                    >
+                        <motion.div
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 50, opacity: 0 }}
+                            style={styles.modal}
+                        >
+                            <div style={styles.modalHeader}>
+                                <h2 style={styles.modalTitle}>Create New Blog</h2>
                                 <button 
-                                    onClick={() => handleLike(blog._id || blog.id)} 
-                                    style={styles.likeButton}
+                                    onClick={() => setShowModal(false)} 
+                                    style={styles.modalCloseButton}
                                 >
-                                    {blog.likedUsers && blog.likedUsers.includes(loggedInUserId) ? `Liked (${blog.likes || 0})` : `Like (${blog.likes || 0})`}
+                                    ×
                                 </button>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <p style={styles.noBlogs}>No blogs posted yet.</p>
-            )}
-
-            {showModal && (
-                <div style={styles.modal}>
-                    <h2>Create a Blog</h2>
-                    <form onSubmit={handleCreateBlog} encType="multipart/form-data">
-                        <input
-                            type="text"
-                            placeholder="Title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            style={styles.input}
-                        />
-                        <textarea
-                            placeholder="Content"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            required
-                            style={styles.textarea}
-                        />
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setImage(e.target.files[0])}
-                            style={{ display: "block", marginBottom: "10px" }}
-                        />
-                        <button type="submit" style={styles.postButton}>Post Blog</button>
-                        <button onClick={() => setShowModal(false)} style={styles.closeButton}>
-                            Close
-                        </button>
-                    </form>
-                </div>
-            )}
-        </div>
+                            
+                            <form onSubmit={handleCreateBlog} style={styles.modalForm}>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.modalLabel}>Title</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Enter a captivating title"
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        required
+                                        style={styles.modalInput}
+                                    />
+                                </div>
+                                
+                                <div style={styles.formGroup}>
+                                    <label style={styles.modalLabel}>Content</label>
+                                    <textarea
+                                        placeholder="Write your amazing content here..."
+                                        value={content}
+                                        onChange={(e) => setContent(e.target.value)}
+                                        required
+                                        style={styles.modalTextarea}
+                                        rows={8}
+                                    />
+                                </div>
+                                
+                                <div style={styles.formGroup}>
+                                    <label style={styles.modalLabel}>Featured Image</label>
+                                    <div style={styles.fileInputContainer}>
+                                        <label htmlFor="blogImage" style={styles.fileInputLabel}>
+                                            Choose Image
+                                        </label>
+                                        <input
+                                            type="file"
+                                            id="blogImage"
+                                            accept="image/*"
+                                            onChange={(e) => setImage(e.target.files[0])}
+                                            style={styles.fileInput}
+                                        />
+                                        <span style={styles.fileName}>
+                                            {image ? image.name : "No file selected"}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div style={styles.modalButtons}>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        type="button" 
+                                        onClick={() => setShowModal(false)} 
+                                        style={styles.cancelModalButton}
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                    
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        type="submit" 
+                                        style={styles.submitButton}
+                                    >
+                                        Publish Blog
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 };
 
@@ -334,24 +528,134 @@ const styles = {
     container: {
         width: "100%",
         minHeight: "100vh",
+        backgroundColor: "#f8f9fa",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+        paddingBottom: "60px",
+    },
+    loadingContainer: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        backgroundColor: "#f8f9fa",
+    },
+    spinner: {
+        width: "50px",
+        height: "50px",
+        border: "5px solid rgba(0, 0, 0, 0.1)",
+        borderTop: "5px solid #6366f1",
+        borderRadius: "50%",
+        animation: "spin 1s linear infinite",
+    },
+    errorContainer: {
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        backgroundColor: "#f8f9fa",
+        padding: "20px",
+    },
+    errorCard: {
+        backgroundColor: "white",
+        borderRadius: "12px",
+        padding: "40px",
+        boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
+        textAlign: "center",
+        maxWidth: "500px",
+        width: "100%",
+    },
+    errorTitle: {
+        fontSize: "2rem",
+        color: "#ef4444",
+        marginBottom: "20px",
+    },
+    errorText: {
+        fontSize: "1.1rem",
+        color: "#6b7280",
+        marginBottom: "30px",
+        lineHeight: "1.6",
+    },
+    errorButton: {
+        padding: "12px 24px",
+        backgroundColor: "#6366f1",
+        color: "white",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    header: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "20px 40px",
+        backgroundColor: "white",
+        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+    },
+    backButton: {
+        padding: "10px 16px",
+        backgroundColor: "transparent",
+        color: "#4b5563",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "0.95rem",
+        fontWeight: "500",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        transition: "all 0.2s ease",
+    },
+    title: {
+        fontSize: "1.8rem",
+        fontWeight: "700",
+        color: "#111827",
+        margin: 0,
+    },
+    titleHighlight: {
+        color: "#6366f1",
+    },
+    createButton: {
+        padding: "10px 20px",
+        backgroundColor: "#6366f1",
+        color: "white",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "0.95rem",
+        fontWeight: "500",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        transition: "all 0.2s ease",
+    },
+    profileSection: {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        backgroundColor: "#f5f5f5",
-        padding: "20px 10px",
-    },
-    title: {
-        fontSize: "2.5rem",
-        color: "#222",
-        fontWeight: "bold",
-        marginBottom: "10px",
+        padding: "40px 20px",
+        backgroundColor: "white",
+        margin: "20px",
+        borderRadius: "12px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+        maxWidth: "800px",
+        marginLeft: "auto",
+        marginRight: "auto",
     },
     profilePictureContainer: {
         width: "150px",
         height: "150px",
         borderRadius: "50%",
         overflow: "hidden",
-        marginBottom: "15px",
+        marginBottom: "20px",
+        border: "5px solid #f3f4f6",
+        boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
+        position: "relative",
     },
     profilePicture: {
         width: "100%",
@@ -361,189 +665,437 @@ const styles = {
     placeholderPicture: {
         width: "100%",
         height: "100%",
+        backgroundColor: "#e5e7eb",
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#ddd",
-        color: "#666",
+        alignItems: "center",
+    },
+    initials: {
+        fontSize: "4rem",
+        fontWeight: "bold",
+        color: "#9ca3af",
+    },
+    profileInfo: {
+        textAlign: "center",
+    },
+    username: {
+        fontSize: "1.8rem",
+        fontWeight: "700",
+        color: "#111827",
+        margin: "0 0 10px 0",
     },
     description: {
-        fontSize: "1.2rem",
-        color: "#444",
-        marginBottom: "20px",
+        fontSize: "1.1rem",
+        color: "#4b5563",
+        lineHeight: "1.6",
+        maxWidth: "600px",
+        marginBottom: "25px",
     },
-    button: {
-        padding: "10px 20px",
-        backgroundColor: "#007bff",
+    editButton: {
+        padding: "12px 24px",
+        backgroundColor: "#6366f1",
         color: "white",
         border: "none",
-        borderRadius: "5px",
-        cursor: "pointer",
-        marginBottom: "20px",
-    },
-    form: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "15px",
-        backgroundColor: "#fff",
-        padding: "20px",
         borderRadius: "8px",
-        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-        width: "100%",
-        maxWidth: "500px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    cancelButton: {
+        padding: "12px 24px",
+        backgroundColor: "#6b7280",
+        color: "white",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    editForm: {
+        backgroundColor: "white",
+        padding: "30px",
+        borderRadius: "12px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+        margin: "20px auto",
+        maxWidth: "600px",
+        overflow: "hidden",
     },
     formGroup: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "5px",
+        marginBottom: "20px",
     },
     label: {
-        fontSize: "1rem",
-        color: "#333",
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "0.95rem",
+        fontWeight: "500",
+        color: "#374151",
+    },
+    fileInputContainer: {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "15px",
+    },
+    fileInputLabel: {
+        padding: "10px 15px",
+        backgroundColor: "#f3f4f6",
+        color: "#374151",
+        borderRadius: "6px",
+        cursor: "pointer",
+        fontSize: "0.9rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
     },
     fileInput: {
-        padding: "5px",
+        display: "none",
+    },
+    fileName: {
+        fontSize: "0.9rem",
+        color: "#6b7280",
     },
     textarea: {
-        padding: "10px",
-        borderRadius: "5px",
-        border: "1px solid #ccc",
+        width: "100%",
+        padding: "12px",
+        borderRadius: "8px",
+        border: "1px solid #e5e7eb",
         resize: "vertical",
+        minHeight: "120px",
+        fontSize: "1rem",
+        fontFamily: "inherit",
+        lineHeight: "1.5",
+        transition: "all 0.2s ease",
     },
-    createButtonContainer: {
-        position: "absolute",
-        top: "80px",
-        right: "20px",
-    },
-    createButton: {
-        padding: "10px 15px",
-        backgroundColor: "#28a745",
+    saveButton: {
+        padding: "12px 24px",
+        backgroundColor: "#10b981",
         color: "white",
         border: "none",
+        borderRadius: "8px",
         cursor: "pointer",
-        borderRadius: "5px",
-    },
-    blogContainer: {
+        fontSize: "1rem",
+        fontWeight: "500",
         width: "100%",
+        transition: "all 0.2s ease",
+    },
+    blogsSection: {
+        padding: "40px 20px",
+        maxWidth: "1200px",
+        margin: "0 auto",
+    },
+    sectionTitle: {
+        fontSize: "1.6rem",
+        fontWeight: "700",
+        color: "#111827",
+        marginBottom: "30px",
+        textAlign: "center",
+    },
+    blogGrid: {
         display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)",
-        gap: "20px",
-        padding: "20px",
+        gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+        gap: "25px",
     },
     blogCard: {
-        border: "1px solid #ccc",
-        padding: "20px",
-        borderRadius: "10px",
-        backgroundColor: "#fff",
+        backgroundColor: "white",
+        borderRadius: "12px",
+        overflow: "hidden",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+        transition: "all 0.3s ease",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
-        height: "auto",
-        alignItems: "center",
-        position: "relative",
+    },
+    blogImageContainer: {
+        width: "100%",
+        height: "200px",
+        overflow: "hidden",
+    },
+    blogImage: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        cursor: "pointer",
+        transition: "transform 0.3s ease",
+    },
+    blogContent: {
+        padding: "20px",
+        flex: 1,
+        display: "flex",
+        flexDirection: "column",
     },
     blogHeader: {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "flex-start",
-        width: "100%",
+        marginBottom: "15px",
     },
-    author: {
-        fontSize: "0.9rem",
-        color: "#666",
-        marginTop: "5px",
+    blogTitle: {
+        fontSize: "1.3rem",
+        fontWeight: "600",
+        color: "#111827",
+        margin: 0,
+        flex: 1,
     },
     menuContainer: {
         position: "relative",
     },
     menuButton: {
+        backgroundColor: "transparent",
+        border: "none",
         cursor: "pointer",
-        fontSize: "24px",
-        padding: "5px",
+        fontSize: "1.2rem",
+        color: "#6b7280",
+        padding: "5px 10px",
     },
     menuDropdown: {
         position: "absolute",
-        top: "30px",
-        right: "0",
-        background: "white",
-        border: "1px solid #ccc",
-        boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-        borderRadius: "5px",
+        right: 0,
+        top: "100%",
+        backgroundColor: "white",
+        borderRadius: "8px",
+        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
         zIndex: 10,
+        minWidth: "120px",
+        overflow: "hidden",
     },
     menuItem: {
-        padding: "10px 20px",
-        border: "none",
-        background: "none",
+        display: "block",
         width: "100%",
+        padding: "10px 15px",
         textAlign: "left",
-        cursor: "pointer",
-        display: "block",
-    },
-    blogImage: {
-        width: "220px",
-        height: "220px",
-        objectFit: "cover",
-        borderRadius: "10px",
-    },
-    readMoreButton: {
-        padding: "10px",
-        backgroundColor: "#28a745",
-        color: "white",
+        backgroundColor: "transparent",
         border: "none",
         cursor: "pointer",
-        borderRadius: "5px",
-        transition: "0.3s",
+        fontSize: "0.9rem",
+        color: "#374151",
+        transition: "all 0.2s ease",
     },
-    noBlogs: {
-        textAlign: "center",
-        color: "#666",
+    blogExcerpt: {
+        color: "#6b7280",
+        lineHeight: "1.6",
+        marginBottom: "20px",
+        flex: 1,
     },
-    modal: {
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        backgroundColor: "white",
-        padding: "20px",
-        borderRadius: "10px",
-        boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.2)",
-        zIndex: 1000,
+    blogFooter: {
+        marginTop: "auto",
     },
-    input: {
-        display: "block",
-        marginBottom: "10px",
-        width: "100%",
-        padding: "5px",
-    },
-    postButton: {
-        padding: "8px 15px",
-        backgroundColor: "#28a745",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
-        marginRight: "10px",
-    },
-    closeButton: {
-        padding: "8px 15px",
-        backgroundColor: "#f44336",
-        color: "white",
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "5px",
-    },
-    interactionButtons: {
+    blogMeta: {
         display: "flex",
-        gap: "10px",
-        marginTop: "10px",
+        justifyContent: "space-between",
+        marginBottom: "15px",
+        fontSize: "0.85rem",
+        color: "#9ca3af",
+    },
+    blogAuthor: {
+        fontWeight: "500",
+    },
+    blogDate: {
+        fontStyle: "italic",
+    },
+    blogActions: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
     },
     likeButton: {
-        padding: "8px 15px",
-        backgroundColor: "#007bff",
+        padding: "8px 16px",
+        backgroundColor: "#f3f4f6",
+        color: "#374151",
+        border: "none",
+        borderRadius: "20px",
+        cursor: "pointer",
+        fontSize: "0.9rem",
+        fontWeight: "500",
+        display: "flex",
+        alignItems: "center",
+        gap: "5px",
+        transition: "all 0.2s ease",
+    },
+    likedButton: {
+        padding: "8px 16px",
+        backgroundColor: "#fecaca",
+        color: "#dc2626",
+        border: "none",
+        borderRadius: "20px",
+        cursor: "pointer",
+        fontSize: "0.9rem",
+        fontWeight: "500",
+        display: "flex",
+        alignItems: "center",
+        gap: "5px",
+        transition: "all 0.2s ease",
+    },
+    readMoreButton: {
+        padding: "8px 16px",
+        backgroundColor: "transparent",
+        color: "#6366f1",
+        border: "1px solid #6366f1",
+        borderRadius: "20px",
+        cursor: "pointer",
+        fontSize: "0.9rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    noBlogsContainer: {
+        backgroundColor: "white",
+        borderRadius: "12px",
+        padding: "40px 20px",
+        textAlign: "center",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+    },
+    noBlogsIllustration: {
+        position: "relative",
+        width: "150px",
+        height: "150px",
+        margin: "0 auto 30px",
+    },
+    pencilIcon: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        fontSize: "60px",
+        transform: "rotate(-15deg)",
+    },
+    paperIcon: {
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        fontSize: "60px",
+        transform: "rotate(10deg)",
+    },
+    noBlogsTitle: {
+        fontSize: "1.5rem",
+        fontWeight: "600",
+        color: "#111827",
+        marginBottom: "10px",
+    },
+    noBlogsText: {
+        fontSize: "1.1rem",
+        color: "#6b7280",
+        marginBottom: "25px",
+        maxWidth: "500px",
+        marginLeft: "auto",
+        marginRight: "auto",
+        lineHeight: "1.6",
+    },
+    createFirstBlogButton: {
+        padding: "12px 24px",
+        backgroundColor: "#6366f1",
         color: "white",
         border: "none",
+        borderRadius: "8px",
         cursor: "pointer",
-        borderRadius: "5px",
-    }
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    modalOverlay: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1000,
+        backdropFilter: "blur(5px)",
+    },
+    modal: {
+        backgroundColor: "white",
+        borderRadius: "12px",
+        width: "90%",
+        maxWidth: "600px",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+    },
+    modalHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "20px",
+        borderBottom: "1px solid #e5e7eb",
+    },
+    modalTitle: {
+        fontSize: "1.5rem",
+        fontWeight: "600",
+        color: "#111827",
+        margin: 0,
+    },
+    modalCloseButton: {
+        backgroundColor: "transparent",
+        border: "none",
+        fontSize: "1.5rem",
+        color: "#6b7280",
+        cursor: "pointer",
+        padding: "5px",
+    },
+    modalForm: {
+        padding: "20px",
+    },
+    modalLabel: {
+        display: "block",
+        marginBottom: "8px",
+        fontSize: "0.95rem",
+        fontWeight: "500",
+        color: "#374151",
+    },
+    modalInput: {
+        width: "100%",
+        padding: "12px",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        fontSize: "1rem",
+        marginBottom: "20px",
+        transition: "all 0.2s ease",
+    },
+    modalTextarea: {
+        width: "100%",
+        padding: "12px",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        fontSize: "1rem",
+        marginBottom: "20px",
+        resize: "vertical",
+        fontFamily: "inherit",
+        lineHeight: "1.5",
+        minHeight: "150px",
+        transition: "all 0.2s ease",
+    },
+    modalButtons: {
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: "15px",
+        marginTop: "20px",
+    },
+    submitButton: {
+        padding: "12px 24px",
+        backgroundColor: "#6366f1",
+        color: "white",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    cancelModalButton: {
+        padding: "12px 24px",
+        backgroundColor: "#f3f4f6",
+        color: "#374151",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
 };
+
+// Add this to your global CSS
+// @keyframes spin {
+//     0% { transform: rotate(0deg); }
+//     100% { transform: rotate(360deg); }
+// }
