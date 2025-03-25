@@ -67,6 +67,7 @@ const BlogDetails = () => {
             setError("Failed to add comment. Please try again.");
         }
     };
+
     const handleDeleteComment = async (commentId) => {
         try {
             await axios.delete(
@@ -81,14 +82,9 @@ const BlogDetails = () => {
                 }
             );
             
-            // Show success notification
             alert("Comment deleted successfully!");
-            
-            // Update UI immediately
             setComments(comments.filter(comment => comment._id !== commentId));
             setCommentMenuOpen(null);
-            
-            // Refresh the page after 1 second
             setTimeout(() => {
                 window.location.reload();
             }, 10);
@@ -110,7 +106,14 @@ const BlogDetails = () => {
         <div style={styles.container}>
             <button onClick={() => navigate(-1)} style={styles.backButton}>⬅ Go Back</button>
             <h2>{blog.title}</h2>
-            <p><b>Author:</b> {blog.author}</p>
+            <p><b>Author:</b> 
+                <span 
+                    style={styles.clickableUsername}
+                    onClick={() => navigate(`/profile/${blog.author}`)}
+                >
+                    {blog.author}
+                </span>
+            </p>
             {blog.imagePath && (
                 <img 
                     src={`http://localhost:8080/${blog.imagePath}`} 
@@ -130,7 +133,14 @@ const BlogDetails = () => {
                     {comments.map((comment) => (
                         <li key={comment.id} style={styles.commentItem}>
                             <div style={styles.commentHeader}>
-                                <p style={styles.commentText}><strong>{comment.author}:</strong> {comment.content}</p>
+                                <p style={styles.commentText}>
+                                    <strong 
+                                        style={styles.clickableUsername}
+                                        onClick={() => navigate(`/profile/${comment.author}`)}
+                                    >
+                                        {comment.author}
+                                    </strong>: {comment.content}
+                                </p>
                                 {(comment.author === loggedInUsername || blog.author === loggedInUsername) && (
                                     <div style={styles.commentMenuContainer}>
                                         <div
@@ -246,6 +256,13 @@ const styles = {
     commentText: {
         flex: 1,
         marginRight: "10px",
+    },
+    clickableUsername: {
+        cursor: "pointer",
+        color: "#007bff",
+        '&:hover': {
+            textDecoration: "underline",
+        }
     },
     commentMenuContainer: {
         position: "relative",
