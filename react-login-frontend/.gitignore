@@ -28,4 +28,15 @@ dist-ssr
 /uploads/
 /src/uploads/
 
+
+
+
+.vscode/
+.DS_Store
+.idea/
+uploads/
+
 node_modules/
+package-lock.json
+
+
