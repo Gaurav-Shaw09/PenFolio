@@ -301,4 +301,43 @@ public class BlogController {
 
         return ResponseEntity.ok("Comment deleted successfully");
     }
+
+    @PostMapping("/{blogId}/comments/{commentId}/like")
+    public ResponseEntity<Comment> likeComment(
+            @PathVariable String blogId,
+            @PathVariable String commentId,
+            @RequestParam String userId) {
+
+        Optional<Comment> commentOptional = commentRepository.findById(commentId);
+        if (commentOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Comment comment = commentOptional.get();
+
+        // Toggle like status
+        if (comment.getLikedUsers().contains(userId)) {
+            // Unlike
+            comment.getLikedUsers().remove(userId);
+            comment.setLikes(comment.getLikes() - 1);
+        } else {
+            // Like
+            comment.getLikedUsers().add(userId);
+            comment.setLikes(comment.getLikes() + 1);
+        }
+
+        commentRepository.save(comment);
+
+        // Update the blog's comments list if needed
+        Optional<Blog> blogOptional = blogRepository.findById(blogId);
+        if (blogOptional.isPresent()) {
+            Blog blog = blogOptional.get();
+            blog.getComments().replaceAll(c ->
+                    c.getId().equals(commentId) ? comment : c
+            );
+            blogRepository.save(blog);
+        }
+
+        return ResponseEntity.ok(comment);
+    }
 }
