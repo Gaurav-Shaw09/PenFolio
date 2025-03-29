@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import Followers from "./Followers"; // Adjust path based on your file structure
+import Following from "./Following"; // Adjust path based on your file structure
 
 const Profile = () => {
     const { username } = useParams();
@@ -22,6 +24,10 @@ const Profile = () => {
     const [followersCount, setFollowersCount] = useState(0);
     const [followingCount, setFollowingCount] = useState(0);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [showFollowers, setShowFollowers] = useState(false);
+    const [showFollowing, setShowFollowing] = useState(false);
+    const [followersList, setFollowersList] = useState([]);
+    const [followingList, setFollowingList] = useState([]);
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
@@ -72,6 +78,15 @@ const Profile = () => {
     useEffect(() => {
         if (userId) fetchUserBlogs();
     }, [userId]);
+
+    // New handler for navigating to a profile with refresh
+    const handleProfileNavigation = (targetUsername) => {
+        navigate(`/profile/${targetUsername}`);
+        // Using setTimeout to ensure navigation completes before refresh
+        setTimeout(() => {
+            window.location.reload();
+        }, 100); // Small delay to allow navigation to complete
+    };
 
     const handleFileChange = (e) => {
         setProfilePicture(e.target.files[0]);
@@ -178,6 +193,26 @@ const Profile = () => {
         }
     };
 
+    const fetchFollowers = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/profile/${username}/followers`);
+            setFollowersList(response.data);
+            setShowFollowers(true);
+        } catch (error) {
+            console.error("Error fetching followers:", error);
+        }
+    };
+
+    const fetchFollowing = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/profile/${username}/following`);
+            setFollowingList(response.data);
+            setShowFollowing(true);
+        } catch (error) {
+            console.error("Error fetching following:", error);
+        }
+    };
+
     if (loading) return (
         <div style={styles.loadingContainer}>
             <div style={styles.spinner}></div>
@@ -252,12 +287,18 @@ const Profile = () => {
                 <div style={styles.profileInfo}>
                     <h2 style={styles.username}>{profile?.username}</h2>
                     <div style={styles.followStats}>
-                        <span style={styles.followCount}>
+                        <button 
+                            style={styles.followCountButton}
+                            onClick={fetchFollowers}
+                        >
                             <strong>{followersCount}</strong> Followers
-                        </span>
-                        <span style={styles.followCount}>
+                        </button>
+                        <button 
+                            style={styles.followCountButton}
+                            onClick={fetchFollowing}
+                        >
                             <strong>{followingCount}</strong> Following
-                        </span>
+                        </button>
                     </div>
                     <p style={styles.description}>
                         {profile?.description || "No description yet. Share something about yourself!"}
@@ -552,11 +593,27 @@ const Profile = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Pass the navigation handler to Followers and Following */}
+            <Followers 
+                username={username}
+                followers={followersList}
+                isOpen={showFollowers}
+                onClose={() => setShowFollowers(false)}
+                onProfileClick={handleProfileNavigation}
+            />
+            <Following 
+                username={username}
+                following={followingList}
+                isOpen={showFollowing}
+                onClose={() => setShowFollowing(false)}
+                onProfileClick={handleProfileNavigation}
+            />
         </motion.div>
     );
 };
 
-export default Profile;
+export default Profile
 
 const styles = {
     container: {
@@ -723,9 +780,14 @@ const styles = {
         justifyContent: "center",
         marginBottom: "15px",
     },
-    followCount: {
+    followCountButton: {
         fontSize: "1rem",
         color: "#4b5563",
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        padding: "5px 10px",
+        transition: "color 0.2s ease",
     },
     description: {
         fontSize: "1.1rem",
