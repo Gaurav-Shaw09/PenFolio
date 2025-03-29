@@ -27,3 +27,7 @@ dist-ssr
 # Ignore the uploads directory
 /uploads/
 /src/uploads/
+spring-login-backend/uploads/
+backend/uploads/
+
+\blog\React-login\login-signup-app\spring-login-backend\uploads
