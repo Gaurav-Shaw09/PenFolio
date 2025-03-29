@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+
+# Ignore uploads folder in spring-login-backend
+spring-login-backend/uploads/
