@@ -6,7 +6,6 @@ import com.example.demo.repository.ProfileRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +30,13 @@ public class ProfileController {
     public ResponseEntity<?> getProfile(@PathVariable String username) {
         try {
             Optional<User> profile = profileService.findByUsername(username);
-            return ResponseEntity.ok(profile);
+            if (profile.isPresent()) {
+                return ResponseEntity.ok(profile.get());
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error fetching profile: " + e.getMessage());
         }
     }
 
@@ -58,12 +61,79 @@ public class ProfileController {
         if (optionalUser.isPresent() && optionalUser.get().getProfilePicture() != null) {
             User user = optionalUser.get();
             return ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_JPEG) // Adjust the media type based on the image format
+                    .contentType(MediaType.IMAGE_JPEG)
                     .body(user.getProfilePicture().getData());
         } else {
             return ResponseEntity.notFound().build();
         }
     }
+
+    // Follow a user
+    @PostMapping("/{username}/follow")
+    public ResponseEntity<?> followUser(
+            @PathVariable String username,
+            @RequestBody FollowRequest followRequest) {
+        try {
+            Optional<User> targetUserOpt = profileService.findByUsername(username);
+            Optional<User> followerUserOpt = userRepository.findById(followRequest.getUserId());
+
+            if (!targetUserOpt.isPresent() || !followerUserOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found");
+            }
+
+            User targetUser = targetUserOpt.get();
+            User followerUser = followerUserOpt.get();
+
+            if (targetUser.getId().equals(followerUser.getId())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Cannot follow yourself");
+            }
+
+            targetUser.addFollower(followerUser.getId());
+            followerUser.addFollowing(targetUser.getId());
+
+            userRepository.save(targetUser);
+            userRepository.save(followerUser);
+
+            return ResponseEntity.ok(targetUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error following user: " + e.getMessage());
+        }
+    }
+
+    // Unfollow a user
+    @PostMapping("/{username}/unfollow")
+    public ResponseEntity<?> unfollowUser(
+            @PathVariable String username,
+            @RequestBody FollowRequest followRequest) {
+        try {
+            Optional<User> targetUserOpt = profileService.findByUsername(username);
+            Optional<User> followerUserOpt = userRepository.findById(followRequest.getUserId());
+
+            if (!targetUserOpt.isPresent() || !followerUserOpt.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found");
+            }
+
+            User targetUser = targetUserOpt.get();
+            User followerUser = followerUserOpt.get();
+
+            targetUser.removeFollower(followerUser.getId());
+            followerUser.removeFollowing(targetUser.getId());
+
+            userRepository.save(targetUser);
+            userRepository.save(followerUser);
+
+            return ResponseEntity.ok(targetUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error unfollowing user: " + e.getMessage());
+        }
+    }
+
+    // Update blog
     @PutMapping("/blogs/{blogId}")
     public ResponseEntity<?> updateBlog(
             @PathVariable String blogId,
@@ -72,20 +142,33 @@ public class ProfileController {
             Blog blog = profileService.updateBlog(blogId, updatedBlog);
             return ResponseEntity.ok(blog);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error updating blog: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error updating blog: " + e.getMessage());
         }
     }
 
-    // ✅ Delete a blog
+    // Delete a blog
     @DeleteMapping("/blogs/{blogId}")
     public ResponseEntity<?> deleteBlog(@PathVariable String blogId) {
         try {
             profileService.deleteBlog(blogId);
             return ResponseEntity.ok("Blog deleted successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting blog: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting blog: " + e.getMessage());
         }
     }
+}
 
+// Simple request class for follow/unfollow operations
+class FollowRequest {
+    private String userId;
 
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 }

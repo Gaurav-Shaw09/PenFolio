@@ -19,11 +19,13 @@ const Profile = () => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [image, setImage] = useState(null);
+    const [followersCount, setFollowersCount] = useState(0);
+    const [followingCount, setFollowingCount] = useState(0);
+    const [isFollowing, setIsFollowing] = useState(false);
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
 
-    // Fetch profile and blogs
     useEffect(() => {
         if (!username) {
             loggedInUsername
@@ -40,9 +42,13 @@ const Profile = () => {
                 const response = await axios.get(`http://localhost:8080/api/profile/${username}`);
                 setProfile(response.data);
                 setDescription(response.data.description || "");
+                setFollowersCount(response.data.followers?.length || 0);
+                setFollowingCount(response.data.following?.length || 0);
                 if (response.data.userId) {
                     setUserId(response.data.userId);
                 }
+                const followers = response.data.followers || [];
+                setIsFollowing(followers.includes(loggedInUserId));
             } catch (error) {
                 console.error("Error fetching profile:", error);
                 setError("Profile not found.");
@@ -52,9 +58,8 @@ const Profile = () => {
         };
 
         fetchProfile();
-    }, [username, navigate, loggedInUsername]);
+    }, [username, navigate, loggedInUsername, loggedInUserId]);
 
-    // Fetch user blogs
     const fetchUserBlogs = async () => {
         try {
             const response = await axios.get(`http://localhost:8080/api/blogs/user/username/${username}`);
@@ -65,7 +70,7 @@ const Profile = () => {
     };
 
     useEffect(() => {
-        fetchUserBlogs();
+        if (userId) fetchUserBlogs();
     }, [userId]);
 
     const handleFileChange = (e) => {
@@ -74,6 +79,26 @@ const Profile = () => {
 
     const handleDescriptionChange = (e) => {
         setDescription(e.target.value);
+    };
+
+    const handleFollow = async () => {
+        try {
+            if (isFollowing) {
+                await axios.post(`http://localhost:8080/api/profile/${username}/unfollow`, {
+                    userId: loggedInUserId
+                });
+                setFollowersCount(prev => prev - 1);
+                setIsFollowing(false);
+            } else {
+                await axios.post(`http://localhost:8080/api/profile/${username}/follow`, {
+                    userId: loggedInUserId
+                });
+                setFollowersCount(prev => prev + 1);
+                setIsFollowing(true);
+            }
+        } catch (error) {
+            console.error("Error following/unfollowing:", error);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -105,10 +130,9 @@ const Profile = () => {
             await axios.delete(`http://localhost:8080/api/blogs/${blogId}`, {
                 data: { userId: loggedInUserId },
             });
-            alert("Blog deleted successfully!");
             setBlogs(blogs.filter((blog) => blog._id !== blogId));
         } catch (error) {
-            console.error("Error deleting blog:", error.response?.data || error.message);
+            console.error("Error deleting blog:", error);
         }
         setTimeout(() => {
             window.location.reload();
@@ -118,7 +142,6 @@ const Profile = () => {
     const handleCreateBlog = async (e) => {
         e.preventDefault();
         if (!userId) {
-            console.error("User not logged in!");
             alert("Please log in to create a blog.");
             return;
         }
@@ -128,9 +151,7 @@ const Profile = () => {
         formData.append("content", content);
         formData.append("author", localStorage.getItem("username"));
         formData.append("userId", userId);
-        if (image) {
-            formData.append("file", image);
-        }
+        if (image) formData.append("file", image);
 
         try {
             await axios.post("http://localhost:8080/api/blogs", formData, {
@@ -168,10 +189,7 @@ const Profile = () => {
             <div style={styles.errorCard}>
                 <h2 style={styles.errorTitle}>Oops!</h2>
                 <p style={styles.errorText}>{error}</p>
-                <button 
-                    onClick={() => navigate("/home")} 
-                    style={styles.errorButton}
-                >
+                <button onClick={() => navigate("/home")} style={styles.errorButton}>
                     Return Home
                 </button>
             </div>
@@ -185,7 +203,6 @@ const Profile = () => {
             transition={{ duration: 0.5 }}
             style={styles.container}
         >
-            {/* Header */}
             <header style={styles.header}>
                 <motion.button 
                     whileHover={{ scale: 1.05 }}
@@ -212,7 +229,6 @@ const Profile = () => {
                 )}
             </header>
 
-            {/* Profile Section */}
             <section style={styles.profileSection}>
                 <motion.div 
                     whileHover={{ scale: 1.03 }}
@@ -235,24 +251,44 @@ const Profile = () => {
 
                 <div style={styles.profileInfo}>
                     <h2 style={styles.username}>{profile?.username}</h2>
+                    <div style={styles.followStats}>
+                        <span style={styles.followCount}>
+                            <strong>{followersCount}</strong> Followers
+                        </span>
+                        <span style={styles.followCount}>
+                            <strong>{followingCount}</strong> Following
+                        </span>
+                    </div>
                     <p style={styles.description}>
                         {profile?.description || "No description yet. Share something about yourself!"}
                     </p>
                     
-                    {loggedInUsername === username && (
-                        <motion.button
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.97 }}
-                            onClick={() => setIsEditing(!isEditing)}
-                            style={isEditing ? styles.cancelButton : styles.editButton}
-                        >
-                            {isEditing ? "Cancel Editing" : "Edit Profile"}
-                        </motion.button>
-                    )}
+                    <div style={styles.profileActions}>
+                        {loggedInUsername === username ? (
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => setIsEditing(!isEditing)}
+                                style={isEditing ? styles.cancelButton : styles.editButton}
+                            >
+                                {isEditing ? "Cancel Editing" : "Edit Profile"}
+                            </motion.button>
+                        ) : (
+                            loggedInUserId && (
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={handleFollow}
+                                    style={isFollowing ? styles.unfollowButton : styles.followButton}
+                                >
+                                    {isFollowing ? "Unfollow" : "Follow"}
+                                </motion.button>
+                            )
+                        )}
+                    </div>
                 </div>
             </section>
 
-            {/* Edit Profile Form */}
             <AnimatePresence>
                 {isEditing && (
                     <motion.form
@@ -308,7 +344,6 @@ const Profile = () => {
                 )}
             </AnimatePresence>
 
-            {/* Blogs Section */}
             <section style={styles.blogsSection}>
                 <h2 style={styles.sectionTitle}>
                     {profile?.username}'s Blog Posts
@@ -424,7 +459,6 @@ const Profile = () => {
                 )}
             </section>
 
-            {/* Create Blog Modal */}
             <AnimatePresence>
                 {showModal && (
                     <motion.div
@@ -655,7 +689,6 @@ const styles = {
         marginBottom: "20px",
         border: "5px solid #f3f4f6",
         boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
-        position: "relative",
     },
     profilePicture: {
         width: "100%",
@@ -684,12 +717,25 @@ const styles = {
         color: "#111827",
         margin: "0 0 10px 0",
     },
+    followStats: {
+        display: "flex",
+        gap: "20px",
+        justifyContent: "center",
+        marginBottom: "15px",
+    },
+    followCount: {
+        fontSize: "1rem",
+        color: "#4b5563",
+    },
     description: {
         fontSize: "1.1rem",
         color: "#4b5563",
         lineHeight: "1.6",
         maxWidth: "600px",
         marginBottom: "25px",
+    },
+    profileActions: {
+        marginTop: "15px",
     },
     editButton: {
         padding: "12px 24px",
@@ -706,6 +752,28 @@ const styles = {
         padding: "12px 24px",
         backgroundColor: "#6b7280",
         color: "white",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    followButton: {
+        padding: "12px 24px",
+        backgroundColor: "#6366f1",
+        color: "white",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        fontSize: "1rem",
+        fontWeight: "500",
+        transition: "all 0.2s ease",
+    },
+    unfollowButton: {
+        padding: "12px 24px",
+        backgroundColor: "#e5e7eb",
+        color: "#374151",
         border: "none",
         borderRadius: "8px",
         cursor: "pointer",
@@ -1093,9 +1161,3 @@ const styles = {
         transition: "all 0.2s ease",
     },
 };
-
-// Add this to your global CSS
-// @keyframes spin {
-//     0% { transform: rotate(0deg); }
-//     100% { transform: rotate(360deg); }
-// }
