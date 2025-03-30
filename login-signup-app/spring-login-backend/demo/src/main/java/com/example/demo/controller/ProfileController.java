@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/profile")
+@RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:5173") // Allow requests from this origin
 public class ProfileController {
 
@@ -27,8 +27,35 @@ public class ProfileController {
     @Autowired
     private UserRepository userRepository;
 
+    // Search users by username
+    @GetMapping("/users/search")
+    public ResponseEntity<?> searchUsers(@RequestParam("query") String query) {
+        try {
+            // Search for users whose username contains the query (case-insensitive)
+            Optional<User> users = userRepository.findByUsername(query);
+            if (users.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No users found matching the query: " + query);
+            }
+
+            // Convert to DTO to return only necessary fields
+            List<UserDTO> userDTOs = users.stream()
+                    .map(user -> new UserDTO(
+                            user.getId(),
+                            user.getUsername(),
+                            user.getDescription()
+                    ))
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(userDTOs);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error searching users: " + e.getMessage());
+        }
+    }
+
     // Fetch profile by username
-    @GetMapping("/{username}")
+    @GetMapping("/profile/{username}")
     public ResponseEntity<?> getProfile(@PathVariable String username) {
         try {
             Optional<User> profile = profileService.findByUsername(username);
@@ -43,7 +70,7 @@ public class ProfileController {
     }
 
     // Update profile
-    @PutMapping("/{username}")
+    @PutMapping("/profile/{username}")
     public ResponseEntity<User> updateProfile(
             @PathVariable String username,
             @RequestParam(required = false) String description,
@@ -57,7 +84,7 @@ public class ProfileController {
     }
 
     // Serve the profile picture as a byte array
-    @GetMapping("/{username}/profile-picture")
+    @GetMapping("/profile/{username}/profile-picture")
     public ResponseEntity<byte[]> getProfilePicture(@PathVariable String username) {
         Optional<User> optionalUser = profileService.findByUsername(username);
         if (optionalUser.isPresent() && optionalUser.get().getProfilePicture() != null) {
@@ -71,7 +98,7 @@ public class ProfileController {
     }
 
     // Follow a user
-    @PostMapping("/{username}/follow")
+    @PostMapping("/profile/{username}/follow")
     public ResponseEntity<?> followUser(
             @PathVariable String username,
             @RequestBody FollowRequest followRequest) {
@@ -106,7 +133,7 @@ public class ProfileController {
     }
 
     // Unfollow a user
-    @PostMapping("/{username}/unfollow")
+    @PostMapping("/profile/{username}/unfollow")
     public ResponseEntity<?> unfollowUser(
             @PathVariable String username,
             @RequestBody FollowRequest followRequest) {
@@ -136,7 +163,7 @@ public class ProfileController {
     }
 
     // Get followers list with user details
-    @GetMapping("/{username}/followers")
+    @GetMapping("/profile/{username}/followers")
     public ResponseEntity<?> getFollowers(@PathVariable String username) {
         try {
             Optional<User> userOpt = profileService.findByUsername(username);
@@ -163,7 +190,7 @@ public class ProfileController {
     }
 
     // Get following list with user details
-    @GetMapping("/{username}/following")
+    @GetMapping("/profile/{username}/following")
     public ResponseEntity<?> getFollowing(@PathVariable String username) {
         try {
             Optional<User> userOpt = profileService.findByUsername(username);
@@ -190,7 +217,7 @@ public class ProfileController {
     }
 
     // Update blog
-    @PutMapping("/blogs/{blogId}")
+    @PutMapping("/profile/blogs/{blogId}")
     public ResponseEntity<?> updateBlog(
             @PathVariable String blogId,
             @RequestBody Blog updatedBlog) {
@@ -204,7 +231,7 @@ public class ProfileController {
     }
 
     // Delete a blog
-    @DeleteMapping("/blogs/{blogId}")
+    @DeleteMapping("/profile/blogs/{blogId}")
     public ResponseEntity<?> deleteBlog(@PathVariable String blogId) {
         try {
             profileService.deleteBlog(blogId);

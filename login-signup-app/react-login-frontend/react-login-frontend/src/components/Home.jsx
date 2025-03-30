@@ -9,6 +9,8 @@ const Home = () => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [image, setImage] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
     const navigate = useNavigate();
 
     const loggedInUsername = localStorage.getItem("username");
@@ -80,9 +82,27 @@ const Home = () => {
             await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
                 params: { userId: loggedInUserId },
             });
-            fetchBlogs(); // Refresh blogs after liking
+            fetchBlogs();
         } catch (error) {
             console.error("Error liking blog:", error);
+        }
+    };
+
+    // Handle search functionality
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            return;
+        }
+
+        try {
+            const response = await axios.get(`http://localhost:8080/api/users/search?query=${searchQuery}`);
+            setSearchResults(response.data); // Store search results
+        } catch (error) {
+            console.error("Error searching user:", error);
+            alert("Error searching for user!");
+            setSearchResults([]);
         }
     };
 
@@ -104,6 +124,19 @@ const Home = () => {
                     <span style={styles.navLink} onClick={() => navigate("/profile")}>
                         My Profile
                     </span>
+                    {/* Search Bar */}
+                    <form onSubmit={handleSearch} style={styles.searchForm}>
+                        <input
+                            type="text"
+                            placeholder="Search people..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={styles.searchInput}
+                        />
+                        <button type="submit" style={styles.searchButton}>
+                            Search
+                        </button>
+                    </form>
                     <button
                         onClick={handleLogout}
                         style={{ ...styles.button, backgroundColor: "#f44336" }}
@@ -112,6 +145,26 @@ const Home = () => {
                     </button>
                 </div>
             </nav>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+                <div style={styles.searchResults}>
+                    <h3 style={{ margin: "10px 0" }}>Search Results</h3>
+                    {searchResults.map((user) => (
+                        <div
+                            key={user.id}
+                            style={styles.searchResultItem}
+                            onClick={() => {
+                                navigate(`/profile/${user.username}`);
+                                setSearchResults([]); // Clear results after navigation
+                                setSearchQuery(""); // Clear search input
+                            }}
+                        >
+                            {user.username}
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Create Blog Button */}
             <div style={styles.createButtonContainer}>
@@ -126,7 +179,6 @@ const Home = () => {
             <div style={styles.blogContainer}>
                 {blogs.map((blog) => (
                     <div key={blog.id} style={styles.blogCard}>
-                        {/* Clickable Username */}
                         <span
                             style={styles.username}
                             onClick={() => navigate(`/profile/${blog.author}`)}
@@ -231,7 +283,7 @@ const Home = () => {
 
 export default Home;
 
-// Styles (same as before)
+// Styles
 const styles = {
     container: {
         fontFamily: "Arial, sans-serif",
@@ -275,6 +327,44 @@ const styles = {
         cursor: "pointer",
         borderRadius: "5px",
         marginLeft: "20px",
+    },
+    searchForm: {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+    },
+    searchInput: {
+        padding: "8px",
+        borderRadius: "5px",
+        border: "none",
+        outline: "none",
+        fontSize: "14px",
+    },
+    searchButton: {
+        padding: "8px 15px",
+        backgroundColor: "#007bff",
+        color: "white",
+        border: "none",
+        cursor: "pointer",
+        borderRadius: "5px",
+    },
+    searchResults: {
+        position: "absolute",
+        top: "60px",
+        right: "20px",
+        backgroundColor: "white",
+        borderRadius: "5px",
+        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+        padding: "10px",
+        zIndex: 1000,
+        maxWidth: "300px",
+        textAlign: "left",
+    },
+    searchResultItem: {
+        padding: "5px 10px",
+        cursor: "pointer",
+        borderBottom: "1px solid #ccc",
+        transition: "background-color 0.2s",
     },
     createButtonContainer: {
         position: "absolute",
@@ -354,13 +444,6 @@ const styles = {
         cursor: "pointer",
         borderRadius: "5px",
     },
-    commentsSection: {
-        marginTop: "15px",
-        width: "100%",
-    },
-    comment: {
-        marginBottom: "10px",
-    },
     modal: {
         position: "fixed",
         top: "50%",
@@ -411,3 +494,13 @@ const styles = {
         width: "100%",
     },
 };
+
+// Add hover effect using CSS via a style tag
+const hoverStyles = `
+    .search-result-item:hover {
+        background-color: #f0f0f0;
+    }
+`;
+
+document.head.insertAdjacentHTML("beforeend", `<style>${hoverStyles}</style>`);
+

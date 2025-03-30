@@ -82,7 +82,6 @@ const Profile = () => {
     // New handler for navigating to a profile with refresh
     const handleProfileNavigation = (targetUsername) => {
         navigate(`/profile/${targetUsername}`);
-        // Using setTimeout to ensure navigation completes before refresh
         setTimeout(() => {
             window.location.reload();
         }, 100); // Small delay to allow navigation to complete
@@ -111,6 +110,10 @@ const Profile = () => {
                 setFollowersCount(prev => prev + 1);
                 setIsFollowing(true);
             }
+            // Refresh the page after follow/unfollow
+            setTimeout(() => {
+                window.location.reload();
+            }, 10); // Small delay to ensure API call completes
         } catch (error) {
             console.error("Error following/unfollowing:", error);
         }
@@ -613,7 +616,7 @@ const Profile = () => {
     );
 };
 
-export default Profile
+export default Profile;
 
 const styles = {
     container: {
