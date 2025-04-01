@@ -3,7 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-    const [blogs, setBlogs] = useState([]);
+    const [allBlogs, setAllBlogs] = useState([]);
+    const [followingBlogs, setFollowingBlogs] = useState([]);
     const [expanded, setExpanded] = useState({});
     const [showModal, setShowModal] = useState(false);
     const [title, setTitle] = useState("");
@@ -11,22 +12,34 @@ const Home = () => {
     const [image, setImage] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
+    const [activeTab, setActiveTab] = useState("all");
     const navigate = useNavigate();
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
 
-    // Fetch blogs
     useEffect(() => {
-        fetchBlogs();
+        fetchAllBlogs();
+        fetchFollowingBlogs();
     }, []);
 
-    const fetchBlogs = async () => {
+    const fetchAllBlogs = async () => {
         try {
             const response = await axios.get("http://localhost:8080/api/blogs");
-            setBlogs(response.data);
+            setAllBlogs(response.data.sort((a, b) => b.id.localeCompare(a.id)));
         } catch (error) {
-            console.error("Error fetching blogs:", error);
+            console.error("Error fetching all blogs:", error);
+        }
+    };
+
+    const fetchFollowingBlogs = async () => {
+        try {
+            const response = await axios.get(
+                `http://localhost:8080/api/blogs/following/${loggedInUserId}`
+            );
+            setFollowingBlogs(response.data.sort((a, b) => b.id.localeCompare(a.id)));
+        } catch (error) {
+            console.error("Error fetching following blogs:", error);
         }
     };
 
@@ -45,7 +58,6 @@ const Home = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const userId = localStorage.getItem("userId");
         if (!userId) {
             console.error("User not logged in!");
@@ -56,18 +68,16 @@ const Home = () => {
         const formData = new FormData();
         formData.append("title", title);
         formData.append("content", content);
-        formData.append("author", localStorage.getItem("username"));
+        formData.append("author", loggedInUsername);
         formData.append("userId", userId);
-
-        if (image) {
-            formData.append("file", image);
-        }
+        if (image) formData.append("file", image);
 
         try {
             await axios.post("http://localhost:8080/api/blogs", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            fetchBlogs();
+            fetchAllBlogs();
+            fetchFollowingBlogs();
             setTitle("");
             setContent("");
             setImage(null);
@@ -82,13 +92,13 @@ const Home = () => {
             await axios.post(`http://localhost:8080/api/blogs/${blogId}/like`, null, {
                 params: { userId: loggedInUserId },
             });
-            fetchBlogs();
+            fetchAllBlogs();
+            fetchFollowingBlogs();
         } catch (error) {
             console.error("Error liking blog:", error);
         }
     };
 
-    // Handle search functionality
     const handleSearch = async (e) => {
         e.preventDefault();
         if (!searchQuery.trim()) {
@@ -97,8 +107,10 @@ const Home = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:8080/api/users/search?query=${searchQuery}`);
-            setSearchResults(response.data); // Store search results
+            const response = await axios.get(
+                `http://localhost:8080/api/users/search?query=${searchQuery}`
+            );
+            setSearchResults(response.data);
         } catch (error) {
             console.error("Error searching user:", error);
             alert("Error searching for user!");
@@ -106,9 +118,62 @@ const Home = () => {
         }
     };
 
+    const renderBlogs = (blogs) => (
+        <div style={styles.blogContainer}>
+            {blogs.map((blog) => (
+                <div key={blog.id} style={styles.blogCard}>
+                    <span
+                        style={styles.username}
+                        onClick={() => navigate(`/profile/${blog.author}`)}
+                    >
+                        {blog.author}
+                    </span>
+                    <h3>{blog.title}</h3>
+                    <p>
+                        <b>Author:</b> {blog.author}
+                    </p>
+                    {blog.imagePath && (
+                        <img
+                            src={`http://localhost:8080/${blog.imagePath}`}
+                            alt="Blog"
+                            style={styles.blogImage}
+                        />
+                    )}
+                    {expanded[blog.id] ? (
+                        <>
+                            <p>{blog.content}</p>
+                            <button
+                                onClick={() => toggleReadMore(blog.id)}
+                                style={styles.showLessButton}
+                            >
+                                Show Less
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            onClick={() => navigate(`/blog/${blog.id}`, { state: { blog } })}
+                            style={styles.readMoreButton}
+                        >
+                            Read More
+                        </button>
+                    )}
+                    <div style={styles.interactionButtons}>
+                        <button
+                            onClick={() => handleLike(blog.id)}
+                            style={styles.likeButton}
+                        >
+                            {blog.likedUsers && blog.likedUsers.includes(loggedInUserId)
+                                ? `Liked (${blog.likes || 0})`
+                                : `Like (${blog.likes || 0})`}
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
     return (
         <div style={styles.container}>
-            {/* Navbar */}
             <nav style={styles.navbar}>
                 <div style={{ fontSize: "24px", fontWeight: "bold" }}>MyApp</div>
                 <div style={styles.navCenter}>
@@ -124,7 +189,6 @@ const Home = () => {
                     <span style={styles.navLink} onClick={() => navigate("/profile")}>
                         My Profile
                     </span>
-                    {/* Search Bar */}
                     <form onSubmit={handleSearch} style={styles.searchForm}>
                         <input
                             type="text"
@@ -146,7 +210,6 @@ const Home = () => {
                 </div>
             </nav>
 
-            {/* Search Results */}
             {searchResults.length > 0 && (
                 <div style={styles.searchResults}>
                     <h3 style={{ margin: "10px 0" }}>Search Results</h3>
@@ -156,8 +219,8 @@ const Home = () => {
                             style={styles.searchResultItem}
                             onClick={() => {
                                 navigate(`/profile/${user.username}`);
-                                setSearchResults([]); // Clear results after navigation
-                                setSearchQuery(""); // Clear search input
+                                setSearchResults([]);
+                                setSearchQuery("");
                             }}
                         >
                             {user.username}
@@ -166,80 +229,51 @@ const Home = () => {
                 </div>
             )}
 
-            {/* Create Blog Button */}
             <div style={styles.createButtonContainer}>
                 <button onClick={() => setShowModal(true)} style={styles.createButton}>
                     Create Blog
                 </button>
             </div>
 
-            <h2 style={{ textAlign: "center", marginTop: "100px" }}>All Blogs</h2>
-
-            {/* Blog Container */}
-            <div style={styles.blogContainer}>
-                {blogs.map((blog) => (
-                    <div key={blog.id} style={styles.blogCard}>
-                        <span
-                            style={styles.username}
-                            onClick={() => navigate(`/profile/${blog.author}`)}
-                        >
-                            {blog.author}
-                        </span>
-
-                        <h3>{blog.title}</h3>
-                        <p>
-                            <b>Author:</b> {blog.author}
-                        </p>
-
-                        {blog.imagePath && (
-                            <img
-                                src={`http://localhost:8080/${blog.imagePath}`}
-                                alt="Blog"
-                                style={styles.blogImage}
-                            />
-                        )}
-
-                        {expanded[blog.id] ? (
-                            <>
-                                <p>{blog.content}</p>
-                                <button
-                                    onClick={() => toggleReadMore(blog.id)}
-                                    style={styles.showLessButton}
-                                >
-                                    Show Less
-                                </button>
-                            </>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    if (!blog.id) {
-                                        console.error("Blog ID is undefined");
-                                        return;
-                                    }
-                                    navigate(`/blog/${blog.id}`, { state: { blog } });
-                                }}
-                                style={styles.readMoreButton}
-                            >
-                                Read More
-                            </button>
-                        )}
-
-                        {/* Like Button */}
-                        <div style={styles.interactionButtons}>
-                            <button
-                                onClick={() => handleLike(blog.id)}
-                                style={styles.likeButton}
-                            >
-                                {blog.likedUsers && blog.likedUsers.includes(loggedInUserId)
-                                    ? `Liked (${blog.likes || 0})`
-                                    : `Like (${blog.likes || 0})`}
-                            </button>
-                        </div>
-                    </div>
-                ))}
+            <div style={styles.tabContainer}>
+                <button
+                    style={{
+                        ...styles.tabButton,
+                        backgroundColor: activeTab === "all" ? "#4facfe" : "#ccc",
+                    }}
+                    onClick={() => setActiveTab("all")}
+                >
+                    All Blogs
+                </button>
+                <button
+                    style={{
+                        ...styles.tabButton,
+                        backgroundColor: activeTab === "following" ? "#4facfe" : "#ccc",
+                    }}
+                    onClick={() => setActiveTab("following")}
+                >
+                    Following
+                </button>
             </div>
 
-            {/* Modal for Creating Blog */}
+            {activeTab === "all" ? (
+                <>
+                    <h2 style={{ textAlign: "center", marginTop: "20px" }}>All Blogs</h2>
+                    {renderBlogs(allBlogs)}
+                </>
+            ) : (
+                <>
+                    <h2 style={{ textAlign: "center", marginTop: "20px" }}>Following</h2>
+                    {followingBlogs.length > 0 ? (
+                        renderBlogs(followingBlogs)
+                    ) : (
+                        <p style={{ textAlign: "center" }}>
+                            You're not following anyone yet.
+                        </p>
+                    )}
+                </>
+            )}
+
             {showModal && (
                 <div style={styles.modal}>
                     <h2>Create a Blog</h2>
@@ -275,7 +309,6 @@ const Home = () => {
                 </div>
             )}
 
-            {/* Footer */}
             <footer style={styles.footer}>© 2025 MyApp. All rights reserved.</footer>
         </div>
     );
@@ -283,7 +316,6 @@ const Home = () => {
 
 export default Home;
 
-// Styles
 const styles = {
     container: {
         fontFamily: "Arial, sans-serif",
@@ -378,6 +410,22 @@ const styles = {
         border: "none",
         cursor: "pointer",
         borderRadius: "5px",
+    },
+    tabContainer: {
+        display: "flex",
+        justifyContent: "center",
+        gap: "20px",
+        marginTop: "80px",
+        marginBottom: "20px",
+    },
+    tabButton: {
+        padding: "10px 20px",
+        color: "white",
+        border: "none",
+        borderRadius: "5px",
+        cursor: "pointer",
+        fontSize: "16px",
+        transition: "background-color 0.3s",
     },
     blogContainer: {
         display: "grid",
@@ -492,15 +540,17 @@ const styles = {
         position: "absolute",
         bottom: -10,
         width: "100%",
+        left: 0,
     },
 };
 
-// Add hover effect using CSS via a style tag
 const hoverStyles = `
     .search-result-item:hover {
         background-color: #f0f0f0;
     }
+    .tab-button:hover {
+        background-color: #66bfff;
+    }
 `;
 
 document.head.insertAdjacentHTML("beforeend", `<style>${hoverStyles}</style>`);
-

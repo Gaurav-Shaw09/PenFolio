@@ -9,5 +9,6 @@ import java.util.List;
 public interface BlogRepository extends MongoRepository<Blog, String> {
     List<Blog> findByUserId(String userId);
     List<Blog> findByUsername(String username);
+    List<Blog> findByUserIdInOrderByCreatedAtDesc(List<String> userIds);
 }
 

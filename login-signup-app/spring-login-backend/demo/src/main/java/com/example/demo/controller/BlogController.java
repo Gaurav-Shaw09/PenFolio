@@ -340,4 +340,21 @@ public class BlogController {
 
         return ResponseEntity.ok(comment);
     }
+
+    @GetMapping("/following/{userId}")
+    public ResponseEntity<List<Blog>> getFollowingBlogs(@PathVariable String userId) {
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+
+        User user = userOptional.get();
+        List<String> followingIds = user.getFollowing();
+        if (followingIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<Blog> followingBlogs = blogRepository.findByUserIdInOrderByCreatedAtDesc(followingIds);
+        return ResponseEntity.ok(followingBlogs);
+    }
 }

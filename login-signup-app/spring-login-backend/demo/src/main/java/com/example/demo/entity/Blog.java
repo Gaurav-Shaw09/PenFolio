@@ -3,10 +3,7 @@ package com.example.demo.entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Document(collection = "blogs")
 public class Blog {
@@ -21,6 +18,7 @@ public class Blog {
     private int likes;
     private Set<String> likedUsers = new HashSet<>();
     private List<Comment> comments = new ArrayList<>();
+    private Date createdAt = new Date(); // New field for creation timestamp
 
     // Constructors, Getters, and Setters
 
@@ -117,5 +115,13 @@ public class Blog {
 
     public void setLikedUsers(Set<String> likedUsers) {
         this.likedUsers = likedUsers;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 }
