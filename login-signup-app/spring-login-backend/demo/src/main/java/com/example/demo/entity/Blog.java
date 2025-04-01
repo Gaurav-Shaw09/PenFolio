@@ -3,7 +3,9 @@ package com.example.demo.entity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Document(collection = "blogs")
 public class Blog {
@@ -11,18 +13,20 @@ public class Blog {
     private String id;
     private String title;
     private String content;
-    private String author;
-    private String userId;
-    private String username;
+    private String author; // Username of the blog author
+    private String userId; // ID of the blog author
+    private String username; // Username of the blog author (redundant with author, but included as per your code)
     private String imagePath;
+    private Date createdAt;
     private int likes;
-    private Set<String> likedUsers = new HashSet<>();
-    private List<Comment> comments = new ArrayList<>();
-    private Date createdAt = new Date(); // New field for creation timestamp
-
-    // Constructors, Getters, and Setters
+    private List<String> likedUsers;
+    private List<Comment> comments; // List of comments
 
     public Blog() {
+        this.createdAt = new Date();
+        this.likes = 0;
+        this.likedUsers = new ArrayList<>();
+        this.comments = new ArrayList<>(); // Initialize the comments list
     }
 
     public Blog(String title, String content, String author, String userId, String username, String imagePath) {
@@ -32,11 +36,13 @@ public class Blog {
         this.userId = userId;
         this.username = username;
         this.imagePath = imagePath;
+        this.createdAt = new Date();
         this.likes = 0;
+        this.likedUsers = new ArrayList<>();
+        this.comments = new ArrayList<>(); // Initialize the comments list
     }
 
-    // Add getters and setters for all fields, including likes and comments
-
+    // Getters and setters
     public String getId() {
         return id;
     }
@@ -93,6 +99,14 @@ public class Blog {
         this.imagePath = imagePath;
     }
 
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public int getLikes() {
         return likes;
     }
@@ -101,27 +115,19 @@ public class Blog {
         this.likes = likes;
     }
 
+    public List<String> getLikedUsers() {
+        return likedUsers;
+    }
+
+    public void setLikedUsers(List<String> likedUsers) {
+        this.likedUsers = likedUsers;
+    }
+
     public List<Comment> getComments() {
         return comments;
     }
 
     public void setComments(List<Comment> comments) {
         this.comments = comments;
-    }
-
-    public Set<String> getLikedUsers() {
-        return likedUsers;
-    }
-
-    public void setLikedUsers(Set<String> likedUsers) {
-        this.likedUsers = likedUsers;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
     }
 }

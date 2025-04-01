@@ -13,6 +13,9 @@ const Home = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [activeTab, setActiveTab] = useState("all");
+    const [notifications, setNotifications] = useState([]);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
     const navigate = useNavigate();
 
     const loggedInUsername = localStorage.getItem("username");
@@ -21,6 +24,7 @@ const Home = () => {
     useEffect(() => {
         fetchAllBlogs();
         fetchFollowingBlogs();
+        fetchNotifications();
     }, []);
 
     const fetchAllBlogs = async () => {
@@ -40,6 +44,56 @@ const Home = () => {
             setFollowingBlogs(response.data.sort((a, b) => b.id.localeCompare(a.id)));
         } catch (error) {
             console.error("Error fetching following blogs:", error);
+        }
+    };
+
+    const fetchNotifications = async () => {
+        setLoadingNotifications(true);
+        try {
+            const response = await axios.get(
+                `http://localhost:8080/api/notifications/${loggedInUserId}`
+            );
+            setNotifications(response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+        } finally {
+            setLoadingNotifications(false);
+        }
+    };
+
+    const markNotificationsAsRead = async () => {
+        try {
+            await axios.put(`http://localhost:8080/api/notifications/${loggedInUserId}/read`);
+            setNotifications(notifications.map(notif => ({ ...notif, isRead: true })));
+        } catch (error) {
+            console.error("Error marking notifications as read:", error);
+        }
+    };
+
+    const clearNotifications = async () => {
+        try {
+            await axios.delete(`http://localhost:8080/api/notifications/${loggedInUserId}`);
+            setNotifications([]);
+        } catch (error) {
+            console.error("Error clearing notifications:", error);
+        }
+    };
+
+    const handleNotificationClick = (notification) => {
+        setShowNotifications(false); // Close the dropdown
+        if (notification.type === "LIKE" || notification.type === "COMMENT" || notification.type === "COMMENT_LIKE") {
+            // Navigate to the blog post
+            if (notification.blogId) {
+                navigate(`/blog/${notification.blogId}`);
+            }
+        } else if (notification.type === "FOLLOW") {
+            // Extract the username from the message (e.g., "subham followed you")
+            const username = notification.message.split(" followed you")[0];
+            if (username) {
+                navigate(`/profile/${username}`);
+            } else {
+                alert("Cannot navigate: Follower information is missing.");
+            }
         }
     };
 
@@ -78,6 +132,7 @@ const Home = () => {
             });
             fetchAllBlogs();
             fetchFollowingBlogs();
+            fetchNotifications();
             setTitle("");
             setContent("");
             setImage(null);
@@ -94,6 +149,7 @@ const Home = () => {
             });
             fetchAllBlogs();
             fetchFollowingBlogs();
+            fetchNotifications();
         } catch (error) {
             console.error("Error liking blog:", error);
         }
@@ -172,6 +228,8 @@ const Home = () => {
         </div>
     );
 
+    const unreadCount = notifications.filter(notif => !notif.isRead).length;
+
     return (
         <div style={styles.container}>
             <nav style={styles.navbar}>
@@ -201,6 +259,59 @@ const Home = () => {
                             Search
                         </button>
                     </form>
+                    <div style={styles.notificationContainer}>
+                        <span
+                            style={styles.navIcon}
+                            onClick={() => {
+                                setShowNotifications(!showNotifications);
+                                if (!showNotifications) markNotificationsAsRead();
+                            }}
+                        >
+                            🔔
+                            {unreadCount > 0 && (
+                                <span style={styles.notificationBadge}>{unreadCount}</span>
+                            )}
+                        </span>
+                        {showNotifications && (
+                            <div style={styles.notificationDropdown}>
+                                <div style={styles.notificationHeader}>
+                                    <h3 style={{ margin: "0", color: "#1a3c34" }}>Notifications</h3>
+                                    {notifications.length > 0 && (
+                                        <button
+                                            onClick={clearNotifications}
+                                            style={styles.clearButton}
+                                        >
+                                            Clear All
+                                        </button>
+                                    )}
+                                </div>
+                                {loadingNotifications ? (
+                                    <p style={{ padding: "10px", color: "#333" }}>Loading...</p>
+                                ) : notifications.length > 0 ? (
+                                    notifications.map((notif) => (
+                                        <div
+                                            key={notif.id}
+                                            style={{
+                                                ...styles.notificationItem,
+                                                backgroundColor: notif.isRead ? "#fff" : "#e6f3ff",
+                                                borderLeft: notif.isRead ? "none" : "4px solid #4facfe",
+                                            }}
+                                            onClick={() => handleNotificationClick(notif)}
+                                        >
+                                            <div style={styles.notificationContent}>
+                                                <span style={{ color: "#333" }}>{notif.message}</span>
+                                            </div>
+                                            <div style={styles.notificationTimestamp}>
+                                                {new Date(notif.createdAt).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p style={{ padding: "10px", color: "#333" }}>No notifications</p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleLogout}
                         style={{ ...styles.button, backgroundColor: "#f44336" }}
@@ -314,8 +425,6 @@ const Home = () => {
     );
 };
 
-export default Home;
-
 const styles = {
     container: {
         fontFamily: "Arial, sans-serif",
@@ -350,6 +459,69 @@ const styles = {
     navLink: {
         cursor: "pointer",
         fontWeight: "bold",
+    },
+    navIcon: {
+        cursor: "pointer",
+        position: "relative",
+        fontSize: "24px",
+    },
+    notificationContainer: {
+        position: "relative",
+    },
+    notificationBadge: {
+        position: "absolute",
+        top: "-5px",
+        right: "-5px",
+        backgroundColor: "#ff0000",
+        color: "white",
+        borderRadius: "50%",
+        padding: "2px 6px",
+        fontSize: "12px",
+    },
+    notificationDropdown: {
+        position: "absolute",
+        top: "40px",
+        right: "0",
+        backgroundColor: "white",
+        borderRadius: "5px",
+        boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+        padding: "10px",
+        zIndex: 1000,
+        maxWidth: "350px",
+        maxHeight: "400px",
+        overflowY: "auto",
+        textAlign: "left",
+    },
+    notificationHeader: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "5px 0",
+    },
+    notificationItem: {
+        padding: "10px",
+        borderBottom: "1px solid #eee",
+        cursor: "pointer",
+        transition: "background-color 0.2s",
+    },
+    notificationContent: {
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+    },
+    notificationTimestamp: {
+        fontSize: "12px",
+        color: "#888",
+        marginTop: "5px",
+    },
+    clearButton: {
+        padding: "5px 10px",
+        backgroundColor: "#f44336",
+        color: "white",
+        border: "none",
+        borderRadius: "5px",
+        cursor: "pointer",
+        fontSize: "12px",
     },
     button: {
         padding: "10px 15px",
@@ -545,12 +717,47 @@ const styles = {
 };
 
 const hoverStyles = `
-    .search-result-item:hover {
+    .searchResultItem:hover {
         background-color: #f0f0f0;
     }
-    .tab-button:hover {
+    .tabButton:hover {
         background-color: #66bfff;
+    }
+    .notificationItem:hover {
+        background-color: #e0e0e0;
+    }
+    .navLink:hover {
+        text-decoration: underline;
+    }
+    .clearButton:hover {
+        background-color: #d32f2f;
+    }
+    .button:hover {
+        background-color: #d32f2f;
+    }
+    .searchButton:hover {
+        background-color: #0056b3;
+    }
+    .createButton:hover {
+        background-color: #218838;
+    }
+    .readMoreButton:hover {
+        background-color: #006d87;
+    }
+    .showLessButton:hover {
+        background-color: #d32f2f;
+    }
+    .likeButton:hover {
+        background-color: #0056b3;
+    }
+    .postButton:hover {
+        background-color: #218838;
+    }
+    .closeButton:hover {
+        background-color: #d32f2f;
     }
 `;
 
 document.head.insertAdjacentHTML("beforeend", `<style>${hoverStyles}</style>`);
+
+export default Home;

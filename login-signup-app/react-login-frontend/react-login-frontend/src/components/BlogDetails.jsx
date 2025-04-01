@@ -14,8 +14,8 @@ const BlogDetails = () => {
     const [loading, setLoading] = useState(!location.state?.blog);
     const [error, setError] = useState(null);
     const [commentMenuOpen, setCommentMenuOpen] = useState(null);
-    const [commentLikes, setCommentLikes] = useState({}); // Track which comments are liked
-    const [commentLikeCounts, setCommentLikeCounts] = useState({}); // Track like counts per comment
+    const [commentLikes, setCommentLikes] = useState({});
+    const [commentLikeCounts, setCommentLikeCounts] = useState({});
 
     const loggedInUsername = localStorage.getItem("username");
     const loggedInUserId = localStorage.getItem("userId");
@@ -27,7 +27,7 @@ const BlogDetails = () => {
                 setBlog(response.data);
                 setLikes(response.data.likes || 0);
                 setComments(response.data.comments || []);
-                
+
                 if (response.data.likedUsers && response.data.likedUsers.includes(loggedInUserId)) {
                     setLiked(true);
                 }
@@ -41,7 +41,6 @@ const BlogDetails = () => {
                 });
                 setCommentLikes(likesState);
                 setCommentLikeCounts(likeCounts);
-
             } catch (error) {
                 console.error("Error fetching blog:", error);
                 setError("Failed to load blog details. Please try again.");
@@ -63,6 +62,7 @@ const BlogDetails = () => {
             setLiked(response.data.likedUsers.includes(loggedInUserId));
         } catch (error) {
             console.error("Error liking blog:", error);
+            setError("Failed to like the blog. Please try again.");
         }
     };
 
@@ -73,83 +73,108 @@ const BlogDetails = () => {
                 null,
                 { params: { userId: loggedInUserId } }
             );
-            
-            // Update the specific comment's like status and count
+
             setCommentLikes(prev => ({
                 ...prev,
-                [commentId]: response.data.likedUsers.includes(loggedInUserId)
+                [commentId]: response.data.likedUsers.includes(loggedInUserId),
             }));
-            
+
             setCommentLikeCounts(prev => ({
                 ...prev,
-                [commentId]: response.data.likes
+                [commentId]: response.data.likes,
             }));
 
-            // Update the comments array to reflect the changes
-            setComments(prev => prev.map(comment => 
-                comment.id === commentId ? response.data : comment
-            ));
-
+            setComments(prev =>
+                prev.map(comment =>
+                    comment.id === commentId ? response.data : comment
+                )
+            );
         } catch (error) {
             console.error("Error liking comment:", error);
+            setError("Failed to like the comment. Please try again.");
         }
     };
 
     const handleCommentSubmit = async (e) => {
         e.preventDefault();
-        if (!newComment || !blog?.id) return;
+        if (!newComment.trim()) {
+            setError("Comment cannot be empty.");
+            return;
+        }
+        if (!loggedInUserId || !loggedInUsername) {
+            setError("You must be logged in to comment.");
+            return;
+        }
 
-        const commentData = { author: loggedInUsername, content: newComment };
+        const commentData = {
+            content: newComment,
+            author: loggedInUsername,
+            authorId: loggedInUserId,
+        };
+
         try {
-            const response = await axios.post(`http://localhost:8080/api/blogs/${blog.id}/comment`, commentData);
+            console.log("Sending comment:", commentData); // Debug the payload
+            const response = await axios.post(
+                `http://localhost:8080/api/blogs/${id}/comment`,
+                commentData,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
             setBlog(response.data);
-            setComments(response.data.comments);
+            setComments(response.data.comments || []);
             setNewComment("");
-            
-            // Initialize like state for new comment
+
+            // Initialize like state for the new comment
             const newCommentId = response.data.comments[response.data.comments.length - 1].id;
             setCommentLikes(prev => ({ ...prev, [newCommentId]: false }));
             setCommentLikeCounts(prev => ({ ...prev, [newCommentId]: 0 }));
-
         } catch (error) {
             console.error("Error adding comment:", error);
-            setError("Failed to add comment. Please try again.");
+            if (error.response) {
+                console.error("Response data:", error.response.data);
+                console.error("Response status:", error.response.status);
+                setError(error.response.data || "Failed to add comment. Please try again.");
+            } else {
+                setError("Failed to add comment. Please try again.");
+            }
         }
     };
 
     const handleDeleteComment = async (commentId) => {
         try {
             await axios.delete(
-                `http://localhost:8080/api/blogs/${blog.id}/comments/${commentId}`,
+                `http://localhost:8080/api/blogs/${id}/comments/${commentId}`,
                 {
-                    data: { 
-                        username: loggedInUsername
-                    },
+                    data: { username: loggedInUsername },
                     headers: {
-                        'Content-Type': 'application/json'
-                    }
+                        "Content-Type": "application/json",
+                    },
                 }
             );
-            
-            alert("Comment deleted successfully!");
-            setComments(comments.filter(comment => comment._id !== commentId));
+
+            setComments(comments.filter(comment => comment.id !== commentId));
             setCommentMenuOpen(null);
-            
+
             // Remove like data for deleted comment
             setCommentLikes(prev => {
-                const newState = {...prev};
+                const newState = { ...prev };
                 delete newState[commentId];
                 return newState;
             });
-            
+
             setCommentLikeCounts(prev => {
-                const newCounts = {...prev};
+                const newCounts = { ...prev };
                 delete newCounts[commentId];
                 return newCounts;
             });
 
+            alert("Comment deleted successfully!");
         } catch (error) {
-            setError(error.response?.data || "Failed to delete comment");
+            console.error("Error deleting comment:", error);
+            setError(error.response?.data || "Failed to delete comment.");
         }
     };
 
@@ -163,10 +188,13 @@ const BlogDetails = () => {
 
     return (
         <div style={styles.container}>
-            <button onClick={() => navigate(-1)} style={styles.backButton}>⬅ Go Back</button>
+            <button onClick={() => navigate(-1)} style={styles.backButton}>
+                ⬅ Go Back
+            </button>
             <h2>{blog.title}</h2>
-            <p><b>Author:</b> 
-                <span 
+            <p>
+                <b>Author:</b>{" "}
+                <span
                     style={styles.clickableUsername}
                     onClick={() => navigate(`/profile/${blog.author}`)}
                 >
@@ -174,9 +202,9 @@ const BlogDetails = () => {
                 </span>
             </p>
             {blog.imagePath && (
-                <img 
-                    src={`http://localhost:8080/${blog.imagePath}`} 
-                    alt="Blog" 
+                <img
+                    src={`http://localhost:8080/${blog.imagePath}`}
+                    alt="Blog"
                     style={styles.fullImage}
                 />
             )}
@@ -189,75 +217,91 @@ const BlogDetails = () => {
             <div style={styles.commentSection}>
                 <h3>Comments</h3>
                 <ul style={styles.commentList}>
-                    {comments.map((comment) => (
-                        <li key={comment.id} style={styles.commentItem}>
-                            <div style={styles.commentHeader}>
-                                <p style={styles.commentText}>
-                                    <strong 
-                                        style={styles.clickableUsername}
-                                        onClick={() => navigate(`/profile/${comment.author}`)}
-                                    >
-                                        {comment.author}
-                                    </strong>: {comment.content}
-                                </p>
-                                <div style={styles.commentActions}>
-                                <button 
-    onClick={(e) => {
-        e.stopPropagation();
-        handleCommentLike(comment.id);
-    }}
-    style={styles.commentLikeButton}
->
-    {commentLikes[comment.id] ? (
-        <span style={{ color: "red" }}>❤️</span>
-    ) : (
-        <span style={{ 
-            color: "white", 
-            textShadow: "0 0 1px #000",
-            WebkitTextStroke: "1px #666" // Adds outline to make white heart visible
-        }}>❤️</span>
-    )}
-    <span style={styles.commentLikeCount}>
-        {commentLikeCounts[comment.id] || 0}
-    </span>
-</button>
-                                    {(comment.author === loggedInUsername || blog.author === loggedInUsername) && (
-                                        <div style={styles.commentMenuContainer}>
-                                            <div
-                                                style={styles.commentMenuButton}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setCommentMenuOpen(commentMenuOpen === comment.id ? null : comment.id);
-                                                }}
-                                            >
-                                                ⋮
-                                            </div>
-                                            {commentMenuOpen === comment.id && (
-                                                <div style={styles.commentMenu}>
-                                                    <button
-                                                        style={styles.commentMenuItem}
-                                                        onClick={() => handleDeleteComment(comment.id)}
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            )}
+                    {comments.length > 0 ? (
+                        comments.map((comment) => (
+                            <li key={comment.id} style={styles.commentItem}>
+                                <div style={styles.commentHeader}>
+                                    <div style={styles.commentText}>
+                                        <strong
+                                            style={styles.clickableUsername}
+                                            onClick={() => navigate(`/profile/${comment.author}`)}
+                                        >
+                                            {comment.author}
+                                        </strong>: {comment.content}
+                                        <div style={styles.commentTimestamp}>
+                                            {new Date(comment.createdAt).toLocaleString()}
                                         </div>
-                                    )}
+                                    </div>
+                                    <div style={styles.commentActions}>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCommentLike(comment.id);
+                                            }}
+                                            style={styles.commentLikeButton}
+                                        >
+                                            {commentLikes[comment.id] ? (
+                                                <span style={{ color: "red" }}>❤️</span>
+                                            ) : (
+                                                <span
+                                                    style={{
+                                                        color: "white",
+                                                        textShadow: "0 0 1px #000",
+                                                        WebkitTextStroke: "1px #666",
+                                                    }}
+                                                >
+                                                    ❤️
+                                                </span>
+                                            )}
+                                            <span style={styles.commentLikeCount}>
+                                                {commentLikeCounts[comment.id] || 0}
+                                            </span>
+                                        </button>
+                                        {(comment.author === loggedInUsername ||
+                                            blog.author === loggedInUsername) && (
+                                            <div style={styles.commentMenuContainer}>
+                                                <div
+                                                    style={styles.commentMenuButton}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setCommentMenuOpen(
+                                                            commentMenuOpen === comment.id ? null : comment.id
+                                                        );
+                                                    }}
+                                                >
+                                                    ⋮
+                                                </div>
+                                                {commentMenuOpen === comment.id && (
+                                                    <div style={styles.commentMenu}>
+                                                        <button
+                                                            style={styles.commentMenuItem}
+                                                            onClick={() => handleDeleteComment(comment.id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </li>
-                    ))}
+                            </li>
+                        ))
+                    ) : (
+                        <li style={styles.noComments}>No comments yet.</li>
+                    )}
                 </ul>
                 <form onSubmit={handleCommentSubmit} style={styles.commentInputContainer}>
-                    <textarea 
-                        placeholder="Add a comment..." 
-                        value={newComment} 
+                    <textarea
+                        placeholder="Add a comment..."
+                        value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         style={styles.commentInput}
                         rows={3}
                     />
-                    <button type="submit" style={styles.commentButton}>Post</button>
+                    <button type="submit" style={styles.commentButton}>
+                        Post
+                    </button>
                 </form>
             </div>
 
@@ -343,6 +387,11 @@ const styles = {
         wordBreak: "break-word",
         overflow: "hidden",
     },
+    commentTimestamp: {
+        fontSize: "12px",
+        color: "#666",
+        marginTop: "5px",
+    },
     commentActions: {
         display: "flex",
         alignItems: "center",
@@ -357,9 +406,6 @@ const styles = {
         padding: "5px",
         borderRadius: "5px",
         transition: "all 0.2s",
-        '&:hover': {
-            background: "#f0f0f0",
-        },
     },
     commentLikeCount: {
         marginLeft: "5px",
@@ -369,9 +415,6 @@ const styles = {
     clickableUsername: {
         cursor: "pointer",
         color: "#007bff",
-        '&:hover': {
-            textDecoration: "underline",
-        }
     },
     commentMenuContainer: {
         position: "relative",
@@ -381,9 +424,6 @@ const styles = {
         padding: "5px",
         fontSize: "18px",
         color: "#666",
-        '&:hover': {
-            color: "#333",
-        },
     },
     commentMenu: {
         position: "absolute",
@@ -405,9 +445,6 @@ const styles = {
         backgroundColor: "transparent",
         cursor: "pointer",
         color: "#f44336",
-        '&:hover': {
-            backgroundColor: "#f5f5f5",
-        },
     },
     commentInputContainer: {
         display: "flex",
@@ -430,6 +467,37 @@ const styles = {
         cursor: "pointer",
         borderRadius: "5px",
     },
+    noComments: {
+        color: "#666",
+        fontStyle: "italic",
+    },
 };
+
+// Add hover styles
+const hoverStyles = `
+    .backButton:hover {
+        background-color: #d32f2f;
+    }
+    .likeButton:hover {
+        background-color: #006d87;
+    }
+    .clickableUsername:hover {
+        text-decoration: underline;
+    }
+    .commentLikeButton:hover {
+        background: #f0f0f0;
+    }
+    .commentMenuButton:hover {
+        color: #333;
+    }
+    .commentMenuItem:hover {
+        background-color: #f5f5f5;
+    }
+    .commentButton:hover {
+        background-color: #45a049;
+    }
+`;
+
+document.head.insertAdjacentHTML("beforeend", `<style>${hoverStyles}</style>`);
 
 export default BlogDetails;

@@ -1,7 +1,9 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.Blog;
+import com.example.demo.entity.Notification;
 import com.example.demo.entity.User;
+import com.example.demo.repository.NotificationRepository;
 import com.example.demo.repository.ProfileRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.ProfileService;
@@ -96,12 +98,14 @@ public class ProfileController {
             return ResponseEntity.notFound().build();
         }
     }
-
+    @Autowired
+    private NotificationRepository notificationRepository;
     // Follow a user
     @PostMapping("/profile/{username}/follow")
     public ResponseEntity<?> followUser(
             @PathVariable String username,
             @RequestBody FollowRequest followRequest) {
+        try AscendingKey ascendingKey = new AscendingKey();
         try {
             Optional<User> targetUserOpt = profileService.findByUsername(username);
             Optional<User> followerUserOpt = userRepository.findById(followRequest.getUserId());
@@ -119,9 +123,26 @@ public class ProfileController {
                         .body("Cannot follow yourself");
             }
 
+            // Check if the follower is already following the target user
+            if (targetUser.getFollowers().contains(followerUser.getId())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Already following this user");
+            }
+
+            // Add follower and following relationships
             targetUser.addFollower(followerUser.getId());
             followerUser.addFollowing(targetUser.getId());
 
+            // Create a notification for the target user
+            Notification notification = new Notification(
+                    targetUser.getId(), // User receiving the notification
+                    "FOLLOW",
+                    followerUser.getUsername() + " followed you"
+            );
+            notification.setFromUserId(followerUser.getId()); // Set the user who triggered the notification
+            notificationRepository.save(notification);
+
+            // Save the updated users
             userRepository.save(targetUser);
             userRepository.save(followerUser);
 

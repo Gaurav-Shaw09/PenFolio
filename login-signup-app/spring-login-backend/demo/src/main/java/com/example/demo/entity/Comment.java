@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Document(collection = "comments")
@@ -11,23 +12,30 @@ public class Comment {
     @Id
     private String id;
     private String blogId;
-    private String author;
     private String content;
-    private int likes = 0;
-    private List<String> likedUsers = new ArrayList<>();
-
-    // Constructors, Getters, and Setters
+    private String author; // Username of the commenter
+    private String authorId; // User ID of the commenter
+    private Date createdAt;
+    private int likes;
+    private List<String> likedUsers;
 
     public Comment() {
+        this.createdAt = new Date();
+        this.likes = 0;
+        this.likedUsers = new ArrayList<>();
     }
 
-    public Comment(String blogId, String author, String content) {
-        this.blogId = blogId;
-        this.author = author;
+    public Comment(String content, String author, String authorId, String blogId) {
         this.content = content;
+        this.author = author;
+        this.authorId = authorId;
+        this.blogId = blogId;
+        this.createdAt = new Date();
+        this.likes = 0;
+        this.likedUsers = new ArrayList<>();
     }
 
-    // Getters and Setters
+    // Getters and setters
     public String getId() {
         return id;
     }
@@ -44,6 +52,14 @@ public class Comment {
         this.blogId = blogId;
     }
 
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
     public String getAuthor() {
         return author;
     }
@@ -52,12 +68,20 @@ public class Comment {
         this.author = author;
     }
 
-    public String getContent() {
-        return content;
+    public String getAuthorId() {
+        return authorId;
     }
 
-    public void setContent(String content) {
-        this.content = content;
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
     }
 
     public int getLikes() {
@@ -74,18 +98,5 @@ public class Comment {
 
     public void setLikedUsers(List<String> likedUsers) {
         this.likedUsers = likedUsers;
-    }
-
-    // Helper method to toggle like
-    public void toggleLike(String userId) {
-        if (likedUsers.contains(userId)) {
-            // User already liked, so unlike
-            likedUsers.remove(userId);
-            likes--;
-        } else {
-            // User hasn't liked yet, so like
-            likedUsers.add(userId);
-            likes++;
-        }
     }
 }
