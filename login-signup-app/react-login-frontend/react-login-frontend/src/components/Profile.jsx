@@ -2,15 +2,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import Followers from "./Followers"; // Adjust path based on your file structure
-import Following from "./Following"; // Adjust path based on your file structure
+import { FiLinkedin, FiEdit2, FiTrash2, FiHeart, FiArrowRight, FiX, FiPlus } from "react-icons/fi";
+import Followers from "./Followers";
+import Following from "./Following";
 
-const Profile = () => {
+const Profile = ({ isDarkMode }) => {
     const { username } = useParams();
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [blogs, setBlogs] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [userId, setUserId] = useState(localStorage.getItem("userId"));
     const [isEditing, setIsEditing] = useState(false);
@@ -58,8 +58,6 @@ const Profile = () => {
             } catch (error) {
                 console.error("Error fetching profile:", error);
                 setError("Profile not found.");
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -79,12 +77,11 @@ const Profile = () => {
         if (userId) fetchUserBlogs();
     }, [userId]);
 
-    // New handler for navigating to a profile with refresh
     const handleProfileNavigation = (targetUsername) => {
         navigate(`/profile/${targetUsername}`);
         setTimeout(() => {
             window.location.reload();
-        }, 100); // Small delay to allow navigation to complete
+        }, 100);
     };
 
     const handleFileChange = (e) => {
@@ -110,10 +107,9 @@ const Profile = () => {
                 setFollowersCount(prev => prev + 1);
                 setIsFollowing(true);
             }
-            // Refresh the page after follow/unfollow
             setTimeout(() => {
                 window.location.reload();
-            }, 10); // Small delay to ensure API call completes
+            }, 10);
         } catch (error) {
             console.error("Error following/unfollowing:", error);
         }
@@ -191,7 +187,7 @@ const Profile = () => {
                 params: { userId: loggedInUserId }
             });
             fetchUserBlogs();
-        } catch (error) {
+        } catch(error) {
             console.error("Error liking blog:", error);
         }
     };
@@ -216,20 +212,68 @@ const Profile = () => {
         }
     };
 
-    if (loading) return (
-        <div style={styles.loadingContainer}>
-            <div style={styles.spinner}></div>
-        </div>
-    );
+    // Animation variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1]
+            }
+        }
+    };
+
+    const cardVariants = {
+        hover: {
+            y: -5,
+            boxShadow: isDarkMode 
+                ? '0 10px 25px rgba(129, 140, 248, 0.3)' 
+                : '0 10px 25px rgba(99, 102, 241, 0.2)'
+        }
+    };
 
     if (error) return (
-        <div style={styles.errorContainer}>
-            <div style={styles.errorCard}>
-                <h2 style={styles.errorTitle}>Oops!</h2>
-                <p style={styles.errorText}>{error}</p>
-                <button onClick={() => navigate("/home")} style={styles.errorButton}>
+        <div style={{
+            ...styles.errorContainer,
+            background: isDarkMode ? '#0f172a' : '#f8fafc'
+        }}>
+            <div style={{
+                ...styles.errorCard,
+                background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'white',
+                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)'
+            }}>
+                <h2 style={{
+                    ...styles.errorTitle,
+                    color: isDarkMode ? '#e2e8f0' : '#ef4444'
+                }}>Oops!</h2>
+                <p style={{
+                    ...styles.errorText,
+                    color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#6b7280'
+                }}>{error}</p>
+                <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/home")} 
+                    style={{
+                        ...styles.errorButton,
+                        background: isDarkMode ? '#818cf8' : '#6366f1'
+                    }}
+                >
                     Return Home
-                </button>
+                </motion.button>
             </div>
         </div>
     );
@@ -239,99 +283,192 @@ const Profile = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            style={styles.container}
+            style={{
+                ...styles.container,
+                background: isDarkMode 
+                    ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' 
+                    : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                color: isDarkMode ? '#e2e8f0' : '#1e293b'
+            }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
         >
-            <header style={styles.header}>
+            <motion.header 
+                style={{
+                    ...styles.header,
+                    background: isDarkMode ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                    borderBottom: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                    backdropFilter: 'blur(10px)'
+                }}
+                variants={itemVariants}
+            >
                 <motion.button 
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => navigate("/home")} 
-                    style={styles.backButton}
+                    style={{
+                        ...styles.backButton,
+                        background: isDarkMode ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.7)',
+                        color: isDarkMode ? '#e2e8f0' : '#1e293b',
+                        border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)'
+                    }}
                 >
                     ← Back to Home
                 </motion.button>
                 
-                <h1 style={styles.title}>
-                    <span style={styles.titleHighlight}>{profile?.username}'s</span> Profile
-                </h1>
+                <motion.h1 
+                    style={{
+                        ...styles.title,
+                        color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                    }}
+                >
+                    <span style={{
+                        background: 'linear-gradient(to right, #6366f1, #8b5cf6)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                    }}>{profile?.username}'s</span> Profile
+                </motion.h1>
                 
                 {loggedInUsername === username && (
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setShowModal(true)}
-                        style={styles.createButton}
+                        style={{
+                            ...styles.createButton,
+                            background: isDarkMode ? '#818cf8' : '#6366f1'
+                        }}
                     >
-                        + New Blog
+                        <FiPlus style={{ marginRight: '8px' }} />
+                        New Blog
                     </motion.button>
                 )}
-            </header>
+            </motion.header>
 
-            <section style={styles.profileSection}>
-                <motion.div 
-                    whileHover={{ scale: 1.03 }}
-                    style={styles.profilePictureContainer}
-                >
-                    {profile?.profilePicture ? (
-                        <img
-                            src={`http://localhost:8080/api/profile/${username}/profile-picture`}
-                            alt="Profile"
-                            style={styles.profilePicture}
-                        />
-                    ) : (
-                        <div style={styles.placeholderPicture}>
-                            <div style={styles.initials}>
-                                {profile?.username?.charAt(0).toUpperCase()}
-                            </div>
-                        </div>
-                    )}
-                </motion.div>
-
-                <div style={styles.profileInfo}>
-                    <h2 style={styles.username}>{profile?.username}</h2>
-                    <div style={styles.followStats}>
-                        <button 
-                            style={styles.followCountButton}
-                            onClick={fetchFollowers}
-                        >
-                            <strong>{followersCount}</strong> Followers
-                        </button>
-                        <button 
-                            style={styles.followCountButton}
-                            onClick={fetchFollowing}
-                        >
-                            <strong>{followingCount}</strong> Following
-                        </button>
-                    </div>
-                    <p style={styles.description}>
-                        {profile?.description || "No description yet. Share something about yourself!"}
-                    </p>
-                    
-                    <div style={styles.profileActions}>
-                        {loggedInUsername === username ? (
-                            <motion.button
-                                whileHover={{ scale: 1.03 }}
-                                whileTap={{ scale: 0.97 }}
-                                onClick={() => setIsEditing(!isEditing)}
-                                style={isEditing ? styles.cancelButton : styles.editButton}
-                            >
-                                {isEditing ? "Cancel Editing" : "Edit Profile"}
-                            </motion.button>
+            <motion.section 
+                style={styles.profileBannerSection}
+                variants={itemVariants}
+            >
+                <div style={{
+                    ...styles.bannerContainer,
+                    backgroundImage: isDarkMode 
+                        ? `linear-gradient(rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.15)), url(https://images.unsplash.com/photo-1528756514091-dee5ecaa3278?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)`
+                        : `linear-gradient(rgba(245, 245, 245, 0), rgba(245, 245, 245, 0.12)), url(https://images.unsplash.com/photo-1528756514091-dee5ecaa3278?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D)`
+                }}>
+                    <motion.div 
+                        whileHover={{ scale: 1.03 }}
+                        style={{
+                            ...styles.profilePictureContainer,
+                            border: isDarkMode ? '6px solid rgba(30, 41, 59, 0.8)' : '6px solid white'
+                        }}
+                    >
+                        {profile?.profilePicture ? (
+                            <img
+                                src={`http://localhost:8080/api/profile/${username}/profile-picture`}
+                                alt="Profile"
+                                style={styles.profilePicture}
+                            />
                         ) : (
-                            loggedInUserId && (
+                            <div style={{
+                                ...styles.placeholderPicture,
+                                background: isDarkMode ? '#1e293b' : '#e5e7eb'
+                            }}>
+                                <div style={{
+                                    ...styles.initials,
+                                    color: isDarkMode ? '#64748b' : '#9ca3af'
+                                }}>
+                                    {profile?.username?.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+
+                <div style={styles.profileInfoContainer}>
+                    <motion.div 
+                        style={{
+                            ...styles.profileInfo,
+                            background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                            backdropFilter: 'blur(10px)'
+                        }}
+                        variants={cardVariants}
+                    >
+                        <h2 style={{
+                            ...styles.username,
+                            color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                        }}>{profile?.username}</h2>
+                        <div style={styles.followStats}>
+                            <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                style={{
+                                    ...styles.followCountButton,
+                                    color: isDarkMode ? '#e2e8f0' : '#4b5563'
+                                }}
+                                onClick={fetchFollowers}
+                            >
+                                <strong>{followersCount}</strong> Followers
+                            </motion.button>
+                            <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                style={{
+                                    ...styles.followCountButton,
+                                    color: isDarkMode ? '#e2e8f0' : '#4b5563'
+                                }}
+                                onClick={fetchFollowing}
+                            >
+                                <strong>{followingCount}</strong> Following
+                            </motion.button>
+                        </div>
+                        <p style={{
+                            ...styles.description,
+                            color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#6b7280'
+                        }}>
+                            {profile?.description || "No description yet. Share something about yourself!"}
+                        </p>
+                        
+                        <div style={styles.profileActions}>
+                            {loggedInUsername === username ? (
                                 <motion.button
                                     whileHover={{ scale: 1.03 }}
                                     whileTap={{ scale: 0.97 }}
-                                    onClick={handleFollow}
-                                    style={isFollowing ? styles.unfollowButton : styles.followButton}
+                                    onClick={() => setIsEditing(!isEditing)}
+                                    style={{
+                                        ...(isEditing ? styles.cancelButton : styles.editButton),
+                                        background: isEditing 
+                                            ? (isDarkMode ? '#334155' : '#6b7280')
+                                            : (isDarkMode ? '#818cf8' : '#6366f1')
+                                    }}
                                 >
-                                    {isFollowing ? "Unfollow" : "Follow"}
+                                    {isEditing ? "Cancel Editing" : "Edit Profile"}
                                 </motion.button>
-                            )
-                        )}
-                    </div>
+                            ) : (
+                                loggedInUserId && (
+                                    <motion.button
+                                        whileHover={{ scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={handleFollow}
+                                        style={{
+                                            ...(isFollowing ? styles.unfollowButton : styles.followButton),
+                                            background: isFollowing 
+                                                ? (isDarkMode ? '#334155' : '#e5e7eb')
+                                                : (isDarkMode ? '#818cf8' : '#6366f1'),
+                                            color: isFollowing 
+                                                ? (isDarkMode ? '#e2e8f0' : '#374151')
+                                                : 'white'
+                                        }}
+                                    >
+                                        {isFollowing ? "Unfollow" : "Follow"}
+                                    </motion.button>
+                                )
+                            )}
+                        </div>
+                    </motion.div>
                 </div>
-            </section>
+            </motion.section>
 
             <AnimatePresence>
                 {isEditing && (
@@ -340,16 +477,33 @@ const Profile = () => {
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         onSubmit={handleSubmit}
-                        style={styles.editForm}
+                        style={{
+                            ...styles.editForm,
+                            background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                            backdropFilter: 'blur(10px)'
+                        }}
                     >
                         <div style={styles.formGroup}>
-                            <label htmlFor="profilePicture" style={styles.label}>
+                            <label htmlFor="profilePicture" style={{
+                                ...styles.label,
+                                color: isDarkMode ? '#e2e8f0' : '#374151'
+                            }}>
                                 Profile Picture
                             </label>
                             <div style={styles.fileInputContainer}>
-                                <label htmlFor="profilePicture" style={styles.fileInputLabel}>
+                                <motion.label 
+                                    htmlFor="profilePicture" 
+                                    style={{
+                                        ...styles.fileInputLabel,
+                                        background: isDarkMode ? '#334155' : '#f3f4f6',
+                                        color: isDarkMode ? '#e2e8f0' : '#374151'
+                                    }}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
                                     Choose File
-                                </label>
+                                </motion.label>
                                 <input 
                                     type="file" 
                                     id="profilePicture" 
@@ -357,21 +511,32 @@ const Profile = () => {
                                     onChange={handleFileChange} 
                                     style={styles.fileInput} 
                                 />
-                                <span style={styles.fileName}>
+                                <span style={{
+                                    ...styles.fileName,
+                                    color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#6b7280'
+                                }}>
                                     {profilePicture ? profilePicture.name : "No file selected"}
                                 </span>
                             </div>
                         </div>
                         
                         <div style={styles.formGroup}>
-                            <label htmlFor="description" style={styles.label}>
+                            <label htmlFor="description" style={{
+                                ...styles.label,
+                                color: isDarkMode ? '#e2e8f0' : '#374151'
+                            }}>
                                 About Me
                             </label>
                             <textarea 
                                 id="description" 
                                 value={description} 
                                 onChange={handleDescriptionChange} 
-                                style={styles.textarea}
+                                style={{
+                                    ...styles.textarea,
+                                    background: isDarkMode ? '#1e293b' : 'white',
+                                    border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e5e7eb',
+                                    color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                                }}
                                 placeholder="Tell your story..."
                             />
                         </div>
@@ -380,7 +545,10 @@ const Profile = () => {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             type="submit" 
-                            style={styles.saveButton}
+                            style={{
+                                ...styles.saveButton,
+                                background: isDarkMode ? '#10b981' : '#10b981'
+                            }}
                         >
                             Save Changes
                         </motion.button>
@@ -388,18 +556,33 @@ const Profile = () => {
                 )}
             </AnimatePresence>
 
-            <section style={styles.blogsSection}>
-                <h2 style={styles.sectionTitle}>
+            <motion.section 
+                style={styles.blogsSection}
+                variants={itemVariants}
+            >
+                <motion.h2 
+                    style={{
+                        ...styles.sectionTitle,
+                        color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                    }}
+                >
                     {profile?.username}'s Blog Posts
-                </h2>
+                </motion.h2>
                 
                 {blogs.length > 0 ? (
                     <div style={styles.blogGrid}>
                         {blogs.map((blog) => (
                             <motion.article
-                                whileHover={{ y: -5, boxShadow: "0 10px 20px rgba(0,0,0,0.1)" }}
                                 key={blog._id || blog.id}
-                                style={styles.blogCard}
+                                style={{
+                                    ...styles.blogCard,
+                                    background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                                    border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                                    backdropFilter: 'blur(10px)'
+                                }}
+                                variants={cardVariants}
+                                whileHover="hover"
+                                transition={{ duration: 0.3 }}
                             >
                                 {blog.imagePath && (
                                     <div style={styles.blogImageContainer}>
@@ -414,36 +597,65 @@ const Profile = () => {
                                 
                                 <div style={styles.blogContent}>
                                     <div style={styles.blogHeader}>
-                                        <h3 style={styles.blogTitle}>{blog.title}</h3>
+                                        <h3 style={{
+                                            ...styles.blogTitle,
+                                            color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                                        }}>{blog.title}</h3>
                                         {loggedInUsername === blog.author && (
                                             <div style={styles.menuContainer}>
-                                                <button
-                                                    style={styles.menuButton}
+                                                <motion.button
+                                                    style={{
+                                                        ...styles.menuButton,
+                                                        color: isDarkMode ? '#e2e8f0' : '#6b7280'
+                                                    }}
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.9 }}
                                                     onClick={() => setMenuOpen(menuOpen === blog._id ? null : blog._id)}
                                                 >
                                                     ⋮
-                                                </button>
+                                                </motion.button>
                                                 {menuOpen === blog._id && (
-                                                    <div style={styles.menuDropdown}>
-                                                        <button
-                                                            style={styles.menuItem}
+                                                    <div style={{
+                                                        ...styles.menuDropdown,
+                                                        background: isDarkMode ? '#1e293b' : 'white',
+                                                        border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)'
+                                                    }}>
+                                                        <motion.button
+                                                            style={{
+                                                                ...styles.menuItem,
+                                                                color: isDarkMode ? '#e2e8f0' : '#374151'
+                                                            }}
+                                                            whileHover={{ 
+                                                                background: isDarkMode ? '#334155' : '#f3f4f6'
+                                                            }}
                                                             onClick={() => navigate(`/edit-blog/${blog._id || blog.id}`)}
                                                         >
+                                                            <FiEdit2 style={{ marginRight: '8px' }} />
                                                             Edit
-                                                        </button>
-                                                        <button
-                                                            style={styles.menuItem}
+                                                        </motion.button>
+                                                        <motion.button
+                                                            style={{
+                                                                ...styles.menuItem,
+                                                                color: isDarkMode ? '#e2e8f0' : '#374151'
+                                                            }}
+                                                            whileHover={{ 
+                                                                background: isDarkMode ? '#334155' : '#f3f4f6'
+                                                            }}
                                                             onClick={() => handleDeleteBlog(blog._id || blog.id)}
                                                         >
+                                                            <FiTrash2 style={{ marginRight: '8px' }} />
                                                             Delete
-                                                        </button>
+                                                        </motion.button>
                                                     </div>
                                                 )}
                                             </div>
                                         )}
                                     </div>
                                     
-                                    <p style={styles.blogExcerpt}>
+                                    <p style={{
+                                        ...styles.blogExcerpt,
+                                        color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#6b7280'
+                                    }}>
                                         {blog.content.length > 120 
                                             ? `${blog.content.substring(0, 120)}...` 
                                             : blog.content}
@@ -451,26 +663,49 @@ const Profile = () => {
                                     
                                     <div style={styles.blogFooter}>
                                         <div style={styles.blogMeta}>
-                                            <span style={styles.blogAuthor}>By {blog.author}</span>
-                                            <span style={styles.blogDate}>Posted on {new Date(blog.createdAt).toLocaleDateString()}</span>
+                                            <span style={{
+                                                ...styles.blogAuthor,
+                                                color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#9ca3af'
+                                            }}>By {blog.author}</span>
+                                            <span style={{
+                                                ...styles.blogDate,
+                                                color: isDarkMode ? 'rgba(226, 232, 240, 0.5)' : '#9ca3af'
+                                            }}>Posted on {new Date(blog.createdAt).toLocaleDateString()}</span>
                                         </div>
                                         
                                         <div style={styles.blogActions}>
-                                            <button
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
                                                 onClick={() => handleLike(blog._id || blog.id)} 
-                                                style={blog.likedUsers && blog.likedUsers.includes(loggedInUserId) 
-                                                    ? styles.likedButton 
-                                                    : styles.likeButton}
+                                                style={{
+                                                    ...(blog.likedUsers && blog.likedUsers.includes(loggedInUserId) 
+                                                        ? styles.likedButton 
+                                                        : styles.likeButton),
+                                                    background: blog.likedUsers && blog.likedUsers.includes(loggedInUserId)
+                                                        ? (isDarkMode ? '#7f1d1d' : '#fecaca')
+                                                        : (isDarkMode ? '#334155' : '#f3f4f6'),
+                                                    color: blog.likedUsers && blog.likedUsers.includes(loggedInUserId)
+                                                        ? (isDarkMode ? '#fecaca' : '#dc2626')
+                                                        : (isDarkMode ? '#e2e8f0' : '#374151')
+                                                }}
                                             >
-                                                ♥ {blog.likes || 0}
-                                            </button>
+                                                <FiHeart style={{ marginRight: '5px' }} />
+                                                {blog.likes || 0}
+                                            </motion.button>
                                             
-                                            <button
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
                                                 onClick={() => navigate(`/blog/${blog._id || blog.id}`, { state: { blog } })}
-                                                style={styles.readMoreButton}
+                                                style={{
+                                                    ...styles.readMoreButton,
+                                                    border: isDarkMode ? '1px solid #818cf8' : '1px solid #6366f1',
+                                                    color: isDarkMode ? '#818cf8' : '#6366f1'
+                                                }}
                                             >
-                                                Read More →
-                                            </button>
+                                                Read More <FiArrowRight style={{ marginLeft: '5px' }} />
+                                            </motion.button>
                                         </div>
                                     </div>
                                 </div>
@@ -478,13 +713,27 @@ const Profile = () => {
                         ))}
                     </div>
                 ) : (
-                    <div style={styles.noBlogsContainer}>
+                    <motion.div 
+                        style={{
+                            ...styles.noBlogsContainer,
+                            background: isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)',
+                            backdropFilter: 'blur(10px)'
+                        }}
+                        whileHover={{ y: -5 }}
+                    >
                         <div style={styles.noBlogsIllustration}>
                             <div style={styles.pencilIcon}>✏️</div>
                             <div style={styles.paperIcon}>📄</div>
                         </div>
-                        <h3 style={styles.noBlogsTitle}>No Blogs Yet</h3>
-                        <p style={styles.noBlogsText}>
+                        <h3 style={{
+                            ...styles.noBlogsTitle,
+                            color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                        }}>No Blogs Yet</h3>
+                        <p style={{
+                            ...styles.noBlogsText,
+                            color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#6b7280'
+                        }}>
                             {loggedInUsername === username 
                                 ? "You haven't written any blogs yet. Share your thoughts with the world!"
                                 : "This user hasn't published any blogs yet."}
@@ -494,14 +743,17 @@ const Profile = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setShowModal(true)}
-                                style={styles.createFirstBlogButton}
+                                style={{
+                                    ...styles.createFirstBlogButton,
+                                    background: isDarkMode ? '#818cf8' : '#6366f1'
+                                }}
                             >
                                 Create Your First Blog
                             </motion.button>
                         )}
-                    </div>
+                    </motion.div>
                 )}
-            </section>
+            </motion.section>
 
             <AnimatePresence>
                 {showModal && (
@@ -515,49 +767,92 @@ const Profile = () => {
                             initial={{ y: 50, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 50, opacity: 0 }}
-                            style={styles.modal}
+                            style={{
+                                ...styles.modal,
+                                background: isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'white',
+                                border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.05)'
+                            }}
                         >
-                            <div style={styles.modalHeader}>
-                                <h2 style={styles.modalTitle}>Create New Blog</h2>
-                                <button 
+                            <div style={{
+                                ...styles.modalHeader,
+                                borderBottom: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e5e7eb'
+                            }}>
+                                <h2 style={{
+                                    ...styles.modalTitle,
+                                    color: isDarkMode ? '#e2e8f0' : '#111827'
+                                }}>Create New Blog</h2>
+                                <motion.button 
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={() => setShowModal(false)} 
-                                    style={styles.modalCloseButton}
+                                    style={{
+                                        ...styles.modalCloseButton,
+                                        color: isDarkMode ? '#e2e8f0' : '#6b7280'
+                                    }}
                                 >
-                                    ×
-                                </button>
+                                    <FiX />
+                                </motion.button>
                             </div>
                             
                             <form onSubmit={handleCreateBlog} style={styles.modalForm}>
                                 <div style={styles.formGroup}>
-                                    <label style={styles.modalLabel}>Title</label>
+                                    <label style={{
+                                        ...styles.modalLabel,
+                                        color: isDarkMode ? '#e2e8f0' : '#374151'
+                                    }}>Title</label>
                                     <input
                                         type="text"
                                         placeholder="Enter a captivating title"
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
                                         required
-                                        style={styles.modalInput}
+                                        style={{
+                                            ...styles.modalInput,
+                                            background: isDarkMode ? '#1e293b' : 'white',
+                                            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e5e7eb',
+                                            color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                                        }}
                                     />
                                 </div>
                                 
                                 <div style={styles.formGroup}>
-                                    <label style={styles.modalLabel}>Content</label>
+                                    <label style={{
+                                        ...styles.modalLabel,
+                                        color: isDarkMode ? '#e2e8f0' : '#374151'
+                                    }}>Content</label>
                                     <textarea
                                         placeholder="Write your amazing content here..."
                                         value={content}
                                         onChange={(e) => setContent(e.target.value)}
                                         required
-                                        style={styles.modalTextarea}
+                                        style={{
+                                            ...styles.modalTextarea,
+                                            background: isDarkMode ? '#1e293b' : 'white',
+                                            border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e5e7eb',
+                                            color: isDarkMode ? '#e2e8f0' : '#1e293b'
+                                        }}
                                         rows={8}
                                     />
                                 </div>
                                 
                                 <div style={styles.formGroup}>
-                                    <label style={styles.modalLabel}>Featured Image</label>
+                                    <label style={{
+                                        ...styles.modalLabel,
+                                        color: isDarkMode ? '#e2e8f0' : '#374151'
+                                    }}>Featured Image</label>
                                     <div style={styles.fileInputContainer}>
-                                        <label htmlFor="blogImage" style={styles.fileInputLabel}>
+                                        <motion.label
+                                            htmlFor="blogImage" 
+                                            style={{
+                                                ...styles.fileInputLabel,
+                                                background: isDarkMode ? '#334155' : '#f3f4f6',
+                                                color: isDarkMode ? '#e2e8f0' : '#374151'
+                                            }}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
                                             Choose Image
-                                        </label>
+                                        </motion.label>
                                         <input
                                             type="file"
                                             id="blogImage"
@@ -565,7 +860,10 @@ const Profile = () => {
                                             onChange={(e) => setImage(e.target.files[0])}
                                             style={styles.fileInput}
                                         />
-                                        <span style={styles.fileName}>
+                                        <span style={{
+                                            ...styles.fileName,
+                                            color: isDarkMode ? 'rgba(226, 232, 240, 0.7)' : '#6b7280'
+                                        }}>
                                             {image ? image.name : "No file selected"}
                                         </span>
                                     </div>
@@ -577,7 +875,11 @@ const Profile = () => {
                                         whileTap={{ scale: 0.98 }}
                                         type="button" 
                                         onClick={() => setShowModal(false)} 
-                                        style={styles.cancelModalButton}
+                                        style={{
+                                            ...styles.cancelModalButton,
+                                            background: isDarkMode ? '#334155' : '#f3f4f6',
+                                            color: isDarkMode ? '#e2e8f0' : '#374151'
+                                        }}
                                     >
                                         Cancel
                                     </motion.button>
@@ -586,7 +888,10 @@ const Profile = () => {
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         type="submit" 
-                                        style={styles.submitButton}
+                                        style={{
+                                            ...styles.submitButton,
+                                            background: isDarkMode ? '#818cf8' : '#6366f1'
+                                        }}
                                     >
                                         Publish Blog
                                     </motion.button>
@@ -597,13 +902,13 @@ const Profile = () => {
                 )}
             </AnimatePresence>
 
-            {/* Pass the navigation handler to Followers and Following */}
             <Followers 
                 username={username}
                 followers={followersList}
                 isOpen={showFollowers}
                 onClose={() => setShowFollowers(false)}
                 onProfileClick={handleProfileNavigation}
+                isDarkMode={isDarkMode}
             />
             <Following 
                 username={username}
@@ -611,67 +916,47 @@ const Profile = () => {
                 isOpen={showFollowing}
                 onClose={() => setShowFollowing(false)}
                 onProfileClick={handleProfileNavigation}
+                isDarkMode={isDarkMode}
             />
         </motion.div>
     );
 };
 
-export default Profile;
-
 const styles = {
     container: {
         width: "100%",
         minHeight: "100vh",
-        backgroundColor: "#f8f9fa",
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         paddingBottom: "60px",
-    },
-    loadingContainer: {
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        backgroundColor: "#f8f9fa",
-    },
-    spinner: {
-        width: "50px",
-        height: "50px",
-        border: "5px solid rgba(0, 0, 0, 0.1)",
-        borderTop: "5px solid #6366f1",
-        borderRadius: "50%",
-        animation: "spin 1s linear infinite",
+        transition: 'background-color 0.3s ease, color 0.3s ease'
     },
     errorContainer: {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         height: "100vh",
-        backgroundColor: "#f8f9fa",
         padding: "20px",
     },
     errorCard: {
-        backgroundColor: "white",
         borderRadius: "12px",
         padding: "40px",
         boxShadow: "0 10px 25px rgba(0, 0, 0, 0.08)",
         textAlign: "center",
         maxWidth: "500px",
         width: "100%",
+        backdropFilter: 'blur(10px)'
     },
     errorTitle: {
         fontSize: "2rem",
-        color: "#ef4444",
         marginBottom: "20px",
     },
     errorText: {
         fontSize: "1.1rem",
-        color: "#6b7280",
         marginBottom: "30px",
         lineHeight: "1.6",
     },
     errorButton: {
         padding: "12px 24px",
-        backgroundColor: "#6366f1",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -685,17 +970,12 @@ const styles = {
         justifyContent: "space-between",
         alignItems: "center",
         padding: "20px 40px",
-        backgroundColor: "white",
-        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
         position: "sticky",
         top: 0,
         zIndex: 100,
     },
     backButton: {
         padding: "10px 16px",
-        backgroundColor: "transparent",
-        color: "#4b5563",
-        border: "1px solid #e5e7eb",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "0.95rem",
@@ -704,19 +984,15 @@ const styles = {
         alignItems: "center",
         gap: "8px",
         transition: "all 0.2s ease",
+        backdropFilter: 'blur(10px)'
     },
     title: {
         fontSize: "1.8rem",
         fontWeight: "700",
-        color: "#111827",
         margin: 0,
-    },
-    titleHighlight: {
-        color: "#6366f1",
     },
     createButton: {
         padding: "10px 20px",
-        backgroundColor: "#6366f1",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -728,27 +1004,30 @@ const styles = {
         gap: "8px",
         transition: "all 0.2s ease",
     },
-    profileSection: {
+    profileBannerSection: {
+        position: "relative",
+        width: "100%",
+        marginBottom: "40px",
+    },
+    bannerContainer: {
+        width: "100%",
+        height: "300px",
+        backgroundPosition: "center",
+        backgroundSize: "cover", 
+        position: "relative",
         display: "flex",
-        flexDirection: "column",
+        justifyContent: "center",
         alignItems: "center",
-        padding: "40px 20px",
-        backgroundColor: "white",
-        margin: "20px",
-        borderRadius: "12px",
-        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
-        maxWidth: "800px",
-        marginLeft: "auto",
-        marginRight: "auto",
+        overflow: "hidden",
     },
     profilePictureContainer: {
-        width: "150px",
-        height: "150px",
+        width: "180px",
+        height: "180px",
         borderRadius: "50%",
         overflow: "hidden",
-        marginBottom: "20px",
-        border: "5px solid #f3f4f6",
-        boxShadow: "0 8px 20px rgba(0, 0, 0, 0.1)",
+        position: "relative",
+        zIndex: 200,
+        boxShadow: "0 10px 30px rgba(0, 0, 0, 0.05)",
     },
     profilePicture: {
         width: "100%",
@@ -758,102 +1037,107 @@ const styles = {
     placeholderPicture: {
         width: "100%",
         height: "100%",
-        backgroundColor: "#e5e7eb",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
     },
     initials: {
-        fontSize: "4rem",
+        fontSize: "5rem",
         fontWeight: "bold",
-        color: "#9ca3af",
+    },
+    profileInfoContainer: {
+        maxWidth: "800px",
+        margin: "-90px auto 0",
+        padding: "0 20px",
+        position: "relative",
+        zIndex: 3,
     },
     profileInfo: {
+        borderRadius: "12px",
+        padding: "30px",
+        boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
         textAlign: "center",
+        backdropFilter: 'blur(10px)'
     },
     username: {
-        fontSize: "1.8rem",
+        fontSize: "2rem",
         fontWeight: "700",
-        color: "#111827",
-        margin: "0 0 10px 0",
+        margin: "0 0 15px 0",
+        letterSpacing: "-0.5px",
     },
     followStats: {
         display: "flex",
-        gap: "20px",
+        gap: "25px",
         justifyContent: "center",
-        marginBottom: "15px",
+        marginBottom: "20px",
     },
     followCountButton: {
-        fontSize: "1rem",
-        color: "#4b5563",
+        fontSize: "1.1rem",
         background: "none",
         border: "none",
         cursor: "pointer",
-        padding: "5px 10px",
+        padding: "5px 12px",
         transition: "color 0.2s ease",
+        fontWeight: "500",
     },
     description: {
-        fontSize: "1.1rem",
-        color: "#4b5563",
-        lineHeight: "1.6",
+        fontSize: "1.15rem",
+        lineHeight: "1.7",
         maxWidth: "600px",
-        marginBottom: "25px",
+        margin: "0 auto 25px",
     },
     profileActions: {
-        marginTop: "15px",
+        marginTop: "20px",
     },
     editButton: {
-        padding: "12px 24px",
-        backgroundColor: "#6366f1",
+        padding: "12px 28px",
         color: "white",
         border: "none",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "1rem",
-        fontWeight: "500",
+        fontWeight: "600",
         transition: "all 0.2s ease",
+        boxShadow: "0 2px 10px rgba(99, 102, 241, 0.3)",
     },
     cancelButton: {
-        padding: "12px 24px",
-        backgroundColor: "#6b7280",
+        padding: "12px 28px",
         color: "white",
         border: "none",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "1rem",
-        fontWeight: "500",
+        fontWeight: "600",
         transition: "all 0.2s ease",
     },
     followButton: {
-        padding: "12px 24px",
-        backgroundColor: "#6366f1",
+        padding: "12px 28px",
         color: "white",
         border: "none",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "1rem",
-        fontWeight: "500",
+        fontWeight: "600",
         transition: "all 0.2s ease",
+        boxShadow: "0 2px 10px rgba(99, 102, 241, 0.3)",
     },
     unfollowButton: {
-        padding: "12px 24px",
-        backgroundColor: "#e5e7eb",
-        color: "#374151",
+        padding: "12px 28px",
         border: "none",
         borderRadius: "8px",
         cursor: "pointer",
         fontSize: "1rem",
-        fontWeight: "500",
+        fontWeight: "600",
         transition: "all 0.2s ease",
     },
     editForm: {
-        backgroundColor: "white",
         padding: "30px",
         borderRadius: "12px",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
         margin: "20px auto",
         maxWidth: "600px",
         overflow: "hidden",
+        backdropFilter: 'blur(10px)'
     },
     formGroup: {
         marginBottom: "20px",
@@ -863,7 +1147,6 @@ const styles = {
         marginBottom: "8px",
         fontSize: "0.95rem",
         fontWeight: "500",
-        color: "#374151",
     },
     fileInputContainer: {
         display: "flex",
@@ -873,8 +1156,6 @@ const styles = {
     },
     fileInputLabel: {
         padding: "10px 15px",
-        backgroundColor: "#f3f4f6",
-        color: "#374151",
         borderRadius: "6px",
         cursor: "pointer",
         fontSize: "0.9rem",
@@ -886,7 +1167,6 @@ const styles = {
     },
     fileName: {
         fontSize: "0.9rem",
-        color: "#6b7280",
     },
     textarea: {
         width: "100%",
@@ -902,7 +1182,6 @@ const styles = {
     },
     saveButton: {
         padding: "12px 24px",
-        backgroundColor: "#10b981",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -920,7 +1199,6 @@ const styles = {
     sectionTitle: {
         fontSize: "1.6rem",
         fontWeight: "700",
-        color: "#111827",
         marginBottom: "30px",
         textAlign: "center",
     },
@@ -930,13 +1208,13 @@ const styles = {
         gap: "25px",
     },
     blogCard: {
-        backgroundColor: "white",
         borderRadius: "12px",
         overflow: "hidden",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
         transition: "all 0.3s ease",
         display: "flex",
         flexDirection: "column",
+        backdropFilter: 'blur(10px)'
     },
     blogImageContainer: {
         width: "100%",
@@ -965,7 +1243,6 @@ const styles = {
     blogTitle: {
         fontSize: "1.3rem",
         fontWeight: "600",
-        color: "#111827",
         margin: 0,
         flex: 1,
     },
@@ -977,14 +1254,12 @@ const styles = {
         border: "none",
         cursor: "pointer",
         fontSize: "1.2rem",
-        color: "#6b7280",
         padding: "5px 10px",
     },
     menuDropdown: {
         position: "absolute",
         right: 0,
         top: "100%",
-        backgroundColor: "white",
         borderRadius: "8px",
         boxShadow: "0 2px 10px rgba(0, 0, 0, 0.1)",
         zIndex: 10,
@@ -992,7 +1267,8 @@ const styles = {
         overflow: "hidden",
     },
     menuItem: {
-        display: "block",
+        display: "flex",
+        alignItems: "center",
         width: "100%",
         padding: "10px 15px",
         textAlign: "left",
@@ -1000,11 +1276,9 @@ const styles = {
         border: "none",
         cursor: "pointer",
         fontSize: "0.9rem",
-        color: "#374151",
         transition: "all 0.2s ease",
     },
     blogExcerpt: {
-        color: "#6b7280",
         lineHeight: "1.6",
         marginBottom: "20px",
         flex: 1,
@@ -1017,7 +1291,6 @@ const styles = {
         justifyContent: "space-between",
         marginBottom: "15px",
         fontSize: "0.85rem",
-        color: "#9ca3af",
     },
     blogAuthor: {
         fontWeight: "500",
@@ -1032,8 +1305,6 @@ const styles = {
     },
     likeButton: {
         padding: "8px 16px",
-        backgroundColor: "#f3f4f6",
-        color: "#374151",
         border: "none",
         borderRadius: "20px",
         cursor: "pointer",
@@ -1046,8 +1317,6 @@ const styles = {
     },
     likedButton: {
         padding: "8px 16px",
-        backgroundColor: "#fecaca",
-        color: "#dc2626",
         border: "none",
         borderRadius: "20px",
         cursor: "pointer",
@@ -1061,20 +1330,20 @@ const styles = {
     readMoreButton: {
         padding: "8px 16px",
         backgroundColor: "transparent",
-        color: "#6366f1",
-        border: "1px solid #6366f1",
         borderRadius: "20px",
         cursor: "pointer",
         fontSize: "0.9rem",
         fontWeight: "500",
         transition: "all 0.2s ease",
+        display: "flex",
+        alignItems: "center",
     },
     noBlogsContainer: {
-        backgroundColor: "white",
         borderRadius: "12px",
         padding: "40px 20px",
         textAlign: "center",
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05)",
+        backdropFilter: 'blur(10px)'
     },
     noBlogsIllustration: {
         position: "relative",
@@ -1099,12 +1368,10 @@ const styles = {
     noBlogsTitle: {
         fontSize: "1.5rem",
         fontWeight: "600",
-        color: "#111827",
         marginBottom: "10px",
     },
     noBlogsText: {
         fontSize: "1.1rem",
-        color: "#6b7280",
         marginBottom: "25px",
         maxWidth: "500px",
         marginLeft: "auto",
@@ -1113,7 +1380,6 @@ const styles = {
     },
     createFirstBlogButton: {
         padding: "12px 24px",
-        backgroundColor: "#6366f1",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -1136,13 +1402,13 @@ const styles = {
         backdropFilter: "blur(5px)",
     },
     modal: {
-        backgroundColor: "white",
         borderRadius: "12px",
         width: "90%",
         maxWidth: "600px",
         maxHeight: "90vh",
         overflowY: "auto",
         boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+        backdropFilter: 'blur(10px)'
     },
     modalHeader: {
         display: "flex",
@@ -1154,16 +1420,16 @@ const styles = {
     modalTitle: {
         fontSize: "1.5rem",
         fontWeight: "600",
-        color: "#111827",
         margin: 0,
     },
     modalCloseButton: {
         backgroundColor: "transparent",
         border: "none",
         fontSize: "1.5rem",
-        color: "#6b7280",
         cursor: "pointer",
         padding: "5px",
+        display: "flex",
+        alignItems: "center",
     },
     modalForm: {
         padding: "20px",
@@ -1173,7 +1439,6 @@ const styles = {
         marginBottom: "8px",
         fontSize: "0.95rem",
         fontWeight: "500",
-        color: "#374151",
     },
     modalInput: {
         width: "100%",
@@ -1205,7 +1470,6 @@ const styles = {
     },
     submitButton: {
         padding: "12px 24px",
-        backgroundColor: "#6366f1",
         color: "white",
         border: "none",
         borderRadius: "8px",
@@ -1216,8 +1480,6 @@ const styles = {
     },
     cancelModalButton: {
         padding: "12px 24px",
-        backgroundColor: "#f3f4f6",
-        color: "#374151",
         border: "none",
         borderRadius: "8px",
         cursor: "pointer",
@@ -1226,3 +1488,5 @@ const styles = {
         transition: "all 0.2s ease",
     },
 };
+
+export default Profile;

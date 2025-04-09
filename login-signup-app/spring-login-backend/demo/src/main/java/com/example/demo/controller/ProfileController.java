@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5173") // Allow requests from this origin
 public class ProfileController {
 
     @Autowired
@@ -28,6 +27,9 @@ public class ProfileController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     // Search users by username
     @GetMapping("/users/search")
@@ -98,14 +100,12 @@ public class ProfileController {
             return ResponseEntity.notFound().build();
         }
     }
-    @Autowired
-    private NotificationRepository notificationRepository;
+
     // Follow a user
     @PostMapping("/profile/{username}/follow")
     public ResponseEntity<?> followUser(
             @PathVariable String username,
             @RequestBody FollowRequest followRequest) {
-        try AscendingKey ascendingKey = new AscendingKey();
         try {
             Optional<User> targetUserOpt = profileService.findByUsername(username);
             Optional<User> followerUserOpt = userRepository.findById(followRequest.getUserId());
