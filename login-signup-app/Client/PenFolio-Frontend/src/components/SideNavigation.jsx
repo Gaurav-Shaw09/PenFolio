@@ -9,7 +9,8 @@ import {
     FiSun,
     FiBell,
     FiSearch,
-    FiSettings
+    FiSettings,
+    FiMessageCircle
   } from "react-icons/fi";
   import { useState, useEffect } from "react";
   import { useNavigate } from "react-router-dom";
@@ -197,6 +198,13 @@ import {
             <FiSettings style={styles.navIcon} />
             <span>Manage Users</span>
           </div>
+          <div 
+    style={isDarkMode ? styles.navItemDark : styles.navItem} 
+    onClick={() => handleNavigation("/contact")}
+  >
+    <FiMessageCircle style={styles.navIcon} /> {/* Updated icon */}
+    <span>Chats</span>
+  </div>
         </nav>
         
         <button 
