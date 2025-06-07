@@ -200,7 +200,7 @@ import {
           </div>
           <div 
     style={isDarkMode ? styles.navItemDark : styles.navItem} 
-    onClick={() => handleNavigation("/contact")}
+    onClick={() => handleNavigation("/ChatSection")}
   >
     <FiMessageCircle style={styles.navIcon} /> {/* Updated icon */}
     <span>Chats</span>
