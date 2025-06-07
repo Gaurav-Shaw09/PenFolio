@@ -19,6 +19,7 @@ import TermsOfService from "./components/TermsOfService";
 import Featured from "./components/Featured";
 import CreateBlog from "./components/CreateBlog";
 import UserManagementDashboard from "./components/UserManagementDashboard";
+import ChatSection from "./components/ChatSection"; // <-- Import your ChatSection
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -115,7 +116,7 @@ function AppContent({ isDarkMode, toggleTheme }) {
           <Route path="/signup" element={<Signup isDarkMode={isDarkMode} />} />
           <Route path="/home" element={<Home isDarkMode={isDarkMode} />} />
           <Route path="/about" element={<About isDarkMode={isDarkMode} />} />
-            <Route path="/user-management" element={<UserManagementDashboard isDarkMode={isDarkMode} />} />
+          <Route path="/user-management" element={<UserManagementDashboard isDarkMode={isDarkMode} />} />
           <Route path="/contact" element={<Contact isDarkMode={isDarkMode} />} />
           <Route path="/blog/:id" element={<BlogDetails isDarkMode={isDarkMode} />} />
           <Route path="/create-blog" element={<CreateBlog isDarkMode={isDarkMode} />} />
@@ -127,6 +128,7 @@ function AppContent({ isDarkMode, toggleTheme }) {
           <Route path="/privacy-policy" element={<PrivacyPolicy isDarkMode={isDarkMode} />} />
           <Route path="/service-terms" element={<TermsOfService isDarkMode={isDarkMode} />} />
           <Route path="/community-guidelines" element={<CommunityGuidelines isDarkMode={isDarkMode} />} />
+          <Route path="/ChatSection" element={<ChatSection />} /> {/* <-- Add this Route */}
           <Route path="/" element={<Home isDarkMode={isDarkMode} />} />
           <Route path="*" element={<NotFound isDarkMode={isDarkMode} />} />
         </Routes>
